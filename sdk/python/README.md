@@ -37,7 +37,6 @@ codex.close()
 - `Thread.turn(input, **opts) -> Turn`
 - `Turn.stream() -> Iterator[Notification]` (all turn notifications/events)
 - `Turn.run(collect_events=True) -> RunResult` (`text`, `completed`, `events`)
-- `Turn.wait() -> Notification` (final `turn/completed`)
 
 `input` is unified: string, dict item, or list of items.
 

@@ -89,12 +89,4 @@ class Turn:
 
         return RunResult(text="".join(chunks), completed=completed, events=events)
 
-    def wait(self) -> Notification:
-        """Wait for turn completion and return the final completion notification."""
-        completed: Notification | None = None
-        for event in self.stream():
-            if event.method == "turn/completed" and (event.params or {}).get("turn", {}).get("id") == self.id:
-                completed = event
-        if completed is None:
-            raise RuntimeError("turn completed event not received")
-        return completed
+    # completion-only waiting can be done via stream() by stopping on turn/completed.
