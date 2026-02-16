@@ -5,9 +5,13 @@ from typing import Any, Iterator
 
 from .client import AppServerClient, AppServerConfig
 from .models import Notification
-from .schema_types import TurnCompletedNotificationPayload
+from .schema_types import TurnCompletedNotificationPayload, ThreadTokenUsageUpdatedNotificationPayload
 
-TurnResult = TurnCompletedNotificationPayload
+
+@dataclass(slots=True)
+class TurnResult:
+    completed: TurnCompletedNotificationPayload
+    usage: ThreadTokenUsageUpdatedNotificationPayload | None = None
 
 Input = list[dict[str, Any]] | dict[str, Any] | str
 
@@ -67,14 +71,22 @@ class Turn:
                 break
 
     def run(self) -> TurnResult:
-        """Consume turn events and return typed `TurnResult` payload."""
+        """Consume turn events and return typed `TurnResult` (completed + usage)."""
         completed_payload: dict[str, Any] | None = None
+        usage: ThreadTokenUsageUpdatedNotificationPayload | None = None
 
         for event in self.stream():
-            if event.method == "turn/completed" and (event.params or {}).get("turn", {}).get("id") == self.id:
+            if event.method == "thread/tokenUsageUpdated":
+                params = event.params or {}
+                if params.get("turnId") == self.id:
+                    usage = ThreadTokenUsageUpdatedNotificationPayload.from_dict(params)
+            elif event.method == "turn/completed" and (event.params or {}).get("turn", {}).get("id") == self.id:
                 completed_payload = event.params or {}
 
         if completed_payload is None:
             raise RuntimeError("turn completed event not received")
 
-        return TurnCompletedNotificationPayload.from_dict(completed_payload)
+        return TurnResult(
+            completed=TurnCompletedNotificationPayload.from_dict(completed_payload),
+            usage=usage,
+        )
