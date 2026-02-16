@@ -19,8 +19,7 @@ def test_minimal_turn_run_and_stream() -> None:
     result = thread.turn("hello").run()
     assert result.text == "hello world"
     assert result.completed.method == "turn/completed"
-    assert result.events is not None
-    assert any(e.method == "item/agentMessage/delta" for e in result.events)
+    assert isinstance(result.items, list)
 
     events = list(thread.turn("hello again").stream())
     assert any(e.method == "turn/completed" for e in events)

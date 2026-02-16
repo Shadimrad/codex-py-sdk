@@ -13,7 +13,7 @@ Input = list[dict[str, Any]] | dict[str, Any] | str
 class RunResult:
     text: str
     completed: Notification
-    events: list[Notification] | None
+    items: list[dict[str, Any]]
 
 
 class Codex:
@@ -70,15 +70,12 @@ class Turn:
             if event.method == "turn/completed" and (event.params or {}).get("turn", {}).get("id") == self.id:
                 break
 
-    def run(self, *, collect_events: bool = True) -> RunResult:
-        """Consume the event stream and return text + completion metadata."""
+    def run(self) -> RunResult:
+        """Consume the event stream and return text + completion metadata + completed turn items."""
         chunks: list[str] = []
-        events: list[Notification] | None = [] if collect_events else None
         completed: Notification | None = None
 
         for event in self.stream():
-            if collect_events and events is not None:
-                events.append(event)
             if event.method == "item/agentMessage/delta":
                 chunks.append((event.params or {}).get("delta", ""))
             if event.method == "turn/completed" and (event.params or {}).get("turn", {}).get("id") == self.id:
@@ -87,6 +84,9 @@ class Turn:
         if completed is None:
             raise RuntimeError("turn completed event not received")
 
-        return RunResult(text="".join(chunks), completed=completed, events=events)
+        turn_obj = (completed.params or {}).get("turn", {})
+        items = turn_obj.get("items", []) if isinstance(turn_obj, dict) else []
+        if not isinstance(items, list):
+            items = []
 
-    # completion-only waiting can be done via stream() by stopping on turn/completed.
+        return RunResult(text="".join(chunks), completed=completed, items=items)
