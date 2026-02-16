@@ -7,6 +7,8 @@ from .client import AppServerClient, AppServerConfig
 from .models import Notification
 from .schema_types import TurnCompletedNotificationPayload
 
+TurnResult = TurnCompletedNotificationPayload
+
 Input = list[dict[str, Any]] | dict[str, Any] | str
 
 
@@ -64,8 +66,8 @@ class Turn:
             if event.method == "turn/completed" and (event.params or {}).get("turn", {}).get("id") == self.id:
                 break
 
-    def run(self) -> TurnCompletedNotificationPayload:
-        """Consume turn events and return typed `turn/completed` payload."""
+    def run(self) -> TurnResult:
+        """Consume turn events and return typed `TurnResult` payload."""
         completed_payload: dict[str, Any] | None = None
 
         for event in self.stream():

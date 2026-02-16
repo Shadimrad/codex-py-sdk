@@ -14,7 +14,7 @@ codex.initialize()
 thread = codex.thread_start(model="gpt-5")
 
 turn = thread.turn("Explain Newton's method in 3 bullets")
-completed = turn.run()  # TurnCompletedNotificationPayload
+completed = turn.run()  # TurnResult
 print(completed.turn.status)  # completed / interrupted / failed
 print(completed.turn.items)
 
@@ -36,7 +36,7 @@ codex.close()
 - `Thread.id`
 - `Thread.turn(input, **opts) -> Turn`
 - `Turn.stream() -> Iterator[Notification]` (all turn notifications/events)
-- `Turn.run() -> TurnCompletedNotificationPayload`
+- `Turn.run() -> TurnResult`
 
 `input` is unified: string, dict item, or list of items.
 
