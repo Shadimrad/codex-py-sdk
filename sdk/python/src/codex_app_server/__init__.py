@@ -15,7 +15,7 @@ from .errors import (
     TransportClosedError,
 )
 from .models import AskResult, Notification
-from .minimal import Codex, Thread, Turn, RunResult
+from .minimal import Codex, Thread, Turn
 from .retry import retry_on_overload
 from .typed import (
     AgentMessageDeltaEvent,
@@ -85,7 +85,6 @@ __all__ = [
     "Codex",
     "Thread",
     "Turn",
-    "RunResult",
     "AppServerConfig",
     "ThreadSession",
     "AsyncThreadSession",

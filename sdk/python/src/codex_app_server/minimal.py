@@ -5,20 +5,9 @@ from typing import Any, Iterator
 
 from .client import AppServerClient, AppServerConfig
 from .models import Notification
-from .schema_types import TurnCompletedNotificationPayload, ThreadTokenUsageUpdatedNotificationPayload
+from .schema_types import TurnCompletedNotificationPayload
 
 Input = list[dict[str, Any]] | dict[str, Any] | str
-
-
-@dataclass(slots=True)
-class RunResult:
-    text: str
-    completed: TurnCompletedNotificationPayload
-    usage: ThreadTokenUsageUpdatedNotificationPayload | None
-
-    @property
-    def items(self) -> list[Any]:
-        return self.completed.turn.items
 
 
 class Codex:
@@ -75,24 +64,15 @@ class Turn:
             if event.method == "turn/completed" and (event.params or {}).get("turn", {}).get("id") == self.id:
                 break
 
-    def run(self) -> RunResult:
-        """Consume the event stream and return typed completion + usage + assembled text."""
-        chunks: list[str] = []
+    def run(self) -> TurnCompletedNotificationPayload:
+        """Consume turn events and return typed `turn/completed` payload."""
         completed_payload: dict[str, Any] | None = None
-        usage: ThreadTokenUsageUpdatedNotificationPayload | None = None
 
         for event in self.stream():
-            if event.method == "item/agentMessage/delta":
-                chunks.append((event.params or {}).get("delta", ""))
-            elif event.method == "thread/tokenUsageUpdated":
-                params = event.params or {}
-                if params.get("turnId") == self.id:
-                    usage = ThreadTokenUsageUpdatedNotificationPayload.from_dict(params)
-            elif event.method == "turn/completed" and (event.params or {}).get("turn", {}).get("id") == self.id:
+            if event.method == "turn/completed" and (event.params or {}).get("turn", {}).get("id") == self.id:
                 completed_payload = event.params or {}
 
         if completed_payload is None:
             raise RuntimeError("turn completed event not received")
 
-        completed = TurnCompletedNotificationPayload.from_dict(completed_payload)
-        return RunResult(text="".join(chunks), completed=completed, usage=usage)
+        return TurnCompletedNotificationPayload.from_dict(completed_payload)
