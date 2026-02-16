@@ -49,6 +49,22 @@ with AppServerClient() as client:
     print(final.method, final.params["turn"]["status"])
 ```
 
+No context-manager required (works fine in notebooks/scripts):
+
+```python
+from codex_app_server import AppServerClient
+
+client = AppServerClient()
+client.start()
+client.initialize()
+
+thread = client.thread_start(model="gpt-5")
+result = client.ask_result("Give me one sentence about gravity.", thread_id=thread["thread"]["id"])
+print(result.text)
+
+client.close()
+```
+
 Notebook-oriented helpers:
 
 ```python
