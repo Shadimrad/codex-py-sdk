@@ -13,19 +13,19 @@ codex.initialize()
 
 thread = codex.thread_start(model="gpt-5")
 
-# non-streaming
-answer = thread.run("Explain Newton's method in 3 bullets")
-print(answer)
+turn = thread.turn("Explain Newton's method in 3 bullets")
+result = turn.run()  # text + completed + events
+print(result.text)
+print(result.completed.method)  # turn/completed
 
-# streaming
-for chunk in thread.stream("Now stream 3 short words"):
-    print(chunk, end="", flush=True)
-print()
+turn2 = thread.turn("Now stream this")
+for event in turn2.stream():
+    print(event.method)
 
 codex.close()
 ```
 
-### Surface
+## Surface
 
 - `Codex.start()`
 - `Codex.initialize()`
@@ -34,9 +34,10 @@ codex.close()
 - `Codex.thread(thread_id) -> Thread`
 - `Codex.models(include_hidden=False)`
 - `Thread.id`
-- `Thread.turn(input, **opts)`
-- `Thread.run(input, **opts) -> str`
-- `Thread.stream(input, **opts) -> Iterator[str]`
+- `Thread.turn(input, **opts) -> Turn`
+- `Turn.stream() -> Iterator[Notification]` (all turn notifications/events)
+- `Turn.run(collect_events=True) -> RunResult` (`text`, `completed`, `events`)
+- `Turn.wait() -> Notification` (final `turn/completed`)
 
 `input` is unified: string, dict item, or list of items.
 

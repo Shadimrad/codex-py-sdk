@@ -4,8 +4,16 @@ from dataclasses import dataclass
 from typing import Any, Iterator
 
 from .client import AppServerClient, AppServerConfig
+from .models import Notification
 
 Input = list[dict[str, Any]] | dict[str, Any] | str
+
+
+@dataclass(slots=True)
+class RunResult:
+    text: str
+    completed: Notification
+    events: list[Notification] | None
 
 
 class Codex:
@@ -43,19 +51,50 @@ class Thread:
     _client: AppServerClient
     id: str
 
-    def turn(self, input: Input, **opts: Any) -> dict[str, Any]:
-        return self._client.turn_start(self.id, input, **opts)
+    def turn(self, input: Input, **opts: Any) -> Turn:
+        turn = self._client.turn_start(self.id, input, **opts)
+        return Turn(self._client, self.id, turn["turn"]["id"])
 
-    def run(self, input: Input, **opts: Any) -> str:
-        chunks = [chunk for chunk in self.stream(input, **opts)]
-        return "".join(chunks)
 
-    def stream(self, input: Input, **opts: Any) -> Iterator[str]:
-        turn = self.turn(input, **opts)
-        turn_id = turn["turn"]["id"]
+@dataclass(slots=True)
+class Turn:
+    _client: AppServerClient
+    thread_id: str
+    id: str
+
+    def stream(self) -> Iterator[Notification]:
+        """Yield all notifications for this turn until turn/completed."""
         while True:
             event = self._client.next_notification()
-            if event.method == "item/agentMessage/delta":
-                yield (event.params or {}).get("delta", "")
-            if event.method == "turn/completed" and (event.params or {}).get("turn", {}).get("id") == turn_id:
+            yield event
+            if event.method == "turn/completed" and (event.params or {}).get("turn", {}).get("id") == self.id:
                 break
+
+    def run(self, *, collect_events: bool = True) -> RunResult:
+        """Consume the event stream and return text + completion metadata."""
+        chunks: list[str] = []
+        events: list[Notification] | None = [] if collect_events else None
+        completed: Notification | None = None
+
+        for event in self.stream():
+            if collect_events and events is not None:
+                events.append(event)
+            if event.method == "item/agentMessage/delta":
+                chunks.append((event.params or {}).get("delta", ""))
+            if event.method == "turn/completed" and (event.params or {}).get("turn", {}).get("id") == self.id:
+                completed = event
+
+        if completed is None:
+            raise RuntimeError("turn completed event not received")
+
+        return RunResult(text="".join(chunks), completed=completed, events=events)
+
+    def wait(self) -> Notification:
+        """Wait for turn completion and return the final completion notification."""
+        completed: Notification | None = None
+        for event in self.stream():
+            if event.method == "turn/completed" and (event.params or {}).get("turn", {}).get("id") == self.id:
+                completed = event
+        if completed is None:
+            raise RuntimeError("turn completed event not received")
+        return completed
