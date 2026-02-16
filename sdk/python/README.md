@@ -2,6 +2,8 @@
 
 Python SDK for `codex app-server` JSON-RPC v2 over stdio.
 
+`Codex` / `AsyncCodex` are ergonomic aliases over `AppServerClient` / `AsyncAppServerClient`.
+
 ## Install
 
 ```bash
@@ -18,35 +20,38 @@ python -m pip install -e '.[dev]'
 ## Quickstart
 
 ```python
-from codex_app_server import AppServerClient
+from codex_app_server import Codex
 
-client = AppServerClient()
-client.start()
-client.initialize()
+codex = Codex()
+codex.start()
+codex.initialize()
 
-thread = client.thread_start(model="gpt-5")
+thread = codex.thread_start(model="gpt-5")
 thread_id = thread["thread"]["id"]
 
-turn = client.turn_text(thread_id, "Explain Newton's method in 3 bullets")
-client.wait_for_turn_completed(turn["turn"]["id"])
+turn = codex.turn_text(thread_id, "Explain Newton's method in 3 bullets")
+codex.wait_for_turn_completed(turn["turn"]["id"])
 
-client.close()
+codex.close()
 ```
 
 ## Thread-first fluent API
 
 ```python
-from codex_app_server import AppServerClient
+from codex_app_server import Codex
 
-with AppServerClient() as client:
-    client.initialize()
-    thread = client.thread_start_session(model="gpt-5")
+codex = Codex()
+codex.start()
+codex.initialize()
 
-    result = thread.ask_result("Give me one sentence about gravity")
-    print(result.text)
+thread = codex.thread_start_session(model="gpt-5")
+result = thread.ask_result("Give me one sentence about gravity")
+print(result.text)
 
-    for chunk in thread.stream_text("Now stream 3 short words"):
-        print(chunk, end="", flush=True)
+for chunk in thread.stream_text("Now stream 3 short words"):
+    print(chunk, end="", flush=True)
+
+codex.close()
 ```
 
 ## Typed wrappers

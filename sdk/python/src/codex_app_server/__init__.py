@@ -77,10 +77,16 @@ from .protocol_types import (
 
 __version__ = "0.2.0"
 
+# Friendly aliases for notebook/script ergonomics.
+Codex = AppServerClient
+AsyncCodex = AsyncAppServerClient
+
 __all__ = [
     "__version__",
     "AppServerClient",
     "AsyncAppServerClient",
+    "Codex",
+    "AsyncCodex",
     "AppServerConfig",
     "ThreadSession",
     "AsyncThreadSession",
