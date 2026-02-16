@@ -18,8 +18,10 @@ def test_minimal_turn_run_and_stream() -> None:
 
     result = thread.turn("hello").run()
     assert result.text == "hello world"
-    assert result.completed.method == "turn/completed"
+    assert result.completed.turn.id
+    assert result.completed.turn.status == "completed"
     assert isinstance(result.items, list)
+    # fake server sends token usage updates after turn/completed, so usage may be None here
 
     events = list(thread.turn("hello again").stream())
     assert any(e.method == "turn/completed" for e in events)
