@@ -32,7 +32,7 @@ from .typed import (
     TurnStartedEvent,
 )
 from .retry import retry_on_overload
-from .conversation import Conversation, ThreadSession
+from .conversation import ThreadSession
 from .schema_types import (
     AgentMessageDeltaNotificationPayload as SchemaAgentMessageDeltaNotificationPayload,
     ErrorNotificationPayload as SchemaErrorNotificationPayload,
@@ -308,13 +308,6 @@ class AppServerClient:
             payload["model"] = model
         started = self.thread_start(**payload)
         return ThreadSession(client=self, thread_id=started["thread"]["id"])
-
-    # Backward-compatible aliases.
-    def conversation(self, thread_id: str) -> Conversation:
-        return self.thread(thread_id)
-
-    def conversation_start(self, *, model: str | None = None, **params: Any) -> Conversation:
-        return self.thread_start_session(model=model, **params)
 
     # ---------- Typed convenience wrappers ----------
 

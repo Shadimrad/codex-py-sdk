@@ -4,7 +4,7 @@ import asyncio
 from typing import Any, Iterable
 
 from .client import AppServerClient, AppServerConfig
-from .conversation import AsyncConversation, AsyncThreadSession
+from .conversation import AsyncThreadSession
 from .models import AskResult, Notification
 from .protocol_types import (
     ThreadListResponse,
@@ -143,13 +143,6 @@ class AsyncAppServerClient:
             payload["model"] = model
         started = await self.thread_start(**payload)
         return AsyncThreadSession(client=self, thread_id=started["thread"]["id"])
-
-    # Backward-compatible aliases.
-    def conversation(self, thread_id: str) -> AsyncConversation:
-        return self.thread(thread_id)
-
-    async def conversation_start(self, *, model: str | None = None, **params: Any) -> AsyncConversation:
-        return await self.thread_start_session(model=model, **params)
 
     async def thread_start_typed(self, **params: Any) -> ThreadStartResult:
         return await self._call_sync(self._sync.thread_start_typed, **params)
