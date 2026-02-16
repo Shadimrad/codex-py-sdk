@@ -10,21 +10,25 @@ from .schema_types import TurnCompletedNotificationPayload, ThreadTokenUsageUpda
 
 @dataclass(slots=True)
 class TurnResult:
-    _completed: TurnCompletedNotificationPayload
+    _thread_id: str
+    _turn: Any
     _usage: ThreadTokenUsageUpdatedNotificationPayload | None = None
     _text: str = ""
 
+    def thread_id(self) -> str:
+        return self._thread_id
+
     def turn(self) -> Any:
-        return self._completed.turn
+        return self._turn
 
     def turn_id(self) -> str:
-        return self._completed.turn.id
+        return getattr(self._turn, "id", "")
 
     def status(self) -> str:
-        return self._completed.turn.status
+        return getattr(self._turn, "status", "")
 
     def error(self) -> Any | None:
-        return self._completed.turn.error
+        return getattr(self._turn, "error", None)
 
     def usage(self) -> ThreadTokenUsageUpdatedNotificationPayload | None:
         return self._usage
@@ -33,7 +37,7 @@ class TurnResult:
         return self._text
 
     def items(self) -> list[Any]:
-        return self._completed.turn.items
+        return list(getattr(self._turn, "items", []) or [])
 
 Input = list[dict[str, Any]] | dict[str, Any] | str
 
@@ -111,8 +115,10 @@ class Turn:
         if completed_payload is None:
             raise RuntimeError("turn completed event not received")
 
+        completed = TurnCompletedNotificationPayload.from_dict(completed_payload)
         return TurnResult(
-            _completed=TurnCompletedNotificationPayload.from_dict(completed_payload),
+            _thread_id=completed.threadId,
+            _turn=completed.turn,
             _usage=usage,
             _text="".join(chunks),
         )
