@@ -17,11 +17,14 @@ def test_minimal_turn_run_and_stream() -> None:
     thread = codex.thread_start(model="gpt-5")
 
     result = thread.turn("hello").run()
-    assert result.completed.turn.id
-    assert result.completed.turn.status == "completed"
-    assert isinstance(result.completed.turn.items, list)
+    completed = result.completed()
+    assert completed.turn.id
+    assert completed.turn.status == "completed"
+    assert isinstance(result.items(), list)
+    assert result.text() == "hello world"
     # fake server emits token usage after turn/completed, so this may be None in this fixture
-    assert (result.usage is None) or (result.usage.turnId == result.completed.turn.id)
+    usage = result.usage()
+    assert (usage is None) or (usage.turnId == completed.turn.id)
 
     events = list(thread.turn("hello again").stream())
     assert any(e.method == "turn/completed" for e in events)

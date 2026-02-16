@@ -14,10 +14,11 @@ codex.initialize()
 thread = codex.thread_start(model="gpt-5")
 
 turn = thread.turn("Explain Newton's method in 3 bullets")
-result = turn.run()  # TurnResult (completed + usage)
-print(result.completed.turn.status)  # completed / interrupted / failed
-print(result.completed.turn.items)
-print(result.usage)  # ThreadTokenUsageUpdatedNotificationPayload | None
+result = turn.run()  # TurnResult
+print(result.text())
+print(result.completed().turn.status)  # completed / interrupted / failed
+print(result.items())
+print(result.usage())  # ThreadTokenUsageUpdatedNotificationPayload | None
 
 turn2 = thread.turn("Now stream this")
 for event in turn2.stream():

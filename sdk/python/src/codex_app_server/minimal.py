@@ -10,8 +10,21 @@ from .schema_types import TurnCompletedNotificationPayload, ThreadTokenUsageUpda
 
 @dataclass(slots=True)
 class TurnResult:
-    completed: TurnCompletedNotificationPayload
-    usage: ThreadTokenUsageUpdatedNotificationPayload | None = None
+    _completed: TurnCompletedNotificationPayload
+    _usage: ThreadTokenUsageUpdatedNotificationPayload | None = None
+    _text: str = ""
+
+    def completed(self) -> TurnCompletedNotificationPayload:
+        return self._completed
+
+    def usage(self) -> ThreadTokenUsageUpdatedNotificationPayload | None:
+        return self._usage
+
+    def text(self) -> str:
+        return self._text
+
+    def items(self) -> list[Any]:
+        return self._completed.turn.items
 
 Input = list[dict[str, Any]] | dict[str, Any] | str
 
@@ -71,12 +84,15 @@ class Turn:
                 break
 
     def run(self) -> TurnResult:
-        """Consume turn events and return typed `TurnResult` (completed + usage)."""
+        """Consume turn events and return typed `TurnResult` (completed + usage + text)."""
         completed_payload: dict[str, Any] | None = None
         usage: ThreadTokenUsageUpdatedNotificationPayload | None = None
+        chunks: list[str] = []
 
         for event in self.stream():
-            if event.method == "thread/tokenUsageUpdated":
+            if event.method == "item/agentMessage/delta":
+                chunks.append((event.params or {}).get("delta", ""))
+            elif event.method == "thread/tokenUsageUpdated":
                 params = event.params or {}
                 if params.get("turnId") == self.id:
                     usage = ThreadTokenUsageUpdatedNotificationPayload.from_dict(params)
@@ -87,6 +103,7 @@ class Turn:
             raise RuntimeError("turn completed event not received")
 
         return TurnResult(
-            completed=TurnCompletedNotificationPayload.from_dict(completed_payload),
-            usage=usage,
+            _completed=TurnCompletedNotificationPayload.from_dict(completed_payload),
+            _usage=usage,
+            _text="".join(chunks),
         )
