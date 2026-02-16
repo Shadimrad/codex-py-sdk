@@ -32,7 +32,7 @@ from .typed import (
     TurnStartedEvent,
 )
 from .retry import retry_on_overload
-from .conversation import Conversation
+from .conversation import Conversation, ThreadSession
 from .schema_types import (
     AgentMessageDeltaNotificationPayload as SchemaAgentMessageDeltaNotificationPayload,
     ErrorNotificationPayload as SchemaErrorNotificationPayload,
@@ -299,15 +299,22 @@ class AppServerClient:
     def model_list(self, include_hidden: bool = False) -> dict[str, Any]:
         return self.request("model/list", {"includeHidden": include_hidden})
 
-    def conversation(self, thread_id: str) -> Conversation:
-        return Conversation(client=self, thread_id=thread_id)
+    def thread(self, thread_id: str) -> ThreadSession:
+        return ThreadSession(client=self, thread_id=thread_id)
 
-    def conversation_start(self, *, model: str | None = None, **params: Any) -> Conversation:
+    def thread_start_session(self, *, model: str | None = None, **params: Any) -> ThreadSession:
         payload = dict(params)
         if model is not None:
             payload["model"] = model
         started = self.thread_start(**payload)
-        return Conversation(client=self, thread_id=started["thread"]["id"])
+        return ThreadSession(client=self, thread_id=started["thread"]["id"])
+
+    # Backward-compatible aliases.
+    def conversation(self, thread_id: str) -> Conversation:
+        return self.thread(thread_id)
+
+    def conversation_start(self, *, model: str | None = None, **params: Any) -> Conversation:
+        return self.thread_start_session(model=model, **params)
 
     # ---------- Typed convenience wrappers ----------
 

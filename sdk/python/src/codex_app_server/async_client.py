@@ -4,7 +4,7 @@ import asyncio
 from typing import Any, Iterable
 
 from .client import AppServerClient, AppServerConfig
-from .conversation import AsyncConversation
+from .conversation import AsyncConversation, AsyncThreadSession
 from .models import AskResult, Notification
 from .protocol_types import (
     ThreadListResponse,
@@ -134,15 +134,22 @@ class AsyncAppServerClient:
     async def model_list(self, include_hidden: bool = False) -> dict[str, Any]:
         return await self._call_sync(self._sync.model_list, include_hidden)
 
-    def conversation(self, thread_id: str) -> AsyncConversation:
-        return AsyncConversation(client=self, thread_id=thread_id)
+    def thread(self, thread_id: str) -> AsyncThreadSession:
+        return AsyncThreadSession(client=self, thread_id=thread_id)
 
-    async def conversation_start(self, *, model: str | None = None, **params: Any) -> AsyncConversation:
+    async def thread_start_session(self, *, model: str | None = None, **params: Any) -> AsyncThreadSession:
         payload = dict(params)
         if model is not None:
             payload["model"] = model
         started = await self.thread_start(**payload)
-        return AsyncConversation(client=self, thread_id=started["thread"]["id"])
+        return AsyncThreadSession(client=self, thread_id=started["thread"]["id"])
+
+    # Backward-compatible aliases.
+    def conversation(self, thread_id: str) -> AsyncConversation:
+        return self.thread(thread_id)
+
+    async def conversation_start(self, *, model: str | None = None, **params: Any) -> AsyncConversation:
+        return await self.thread_start_session(model=model, **params)
 
     async def thread_start_typed(self, **params: Any) -> ThreadStartResult:
         return await self._call_sync(self._sync.thread_start_typed, **params)

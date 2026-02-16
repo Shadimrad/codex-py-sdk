@@ -1,6 +1,6 @@
 from .async_client import AsyncAppServerClient
 from .client import AppServerClient, AppServerConfig
-from .conversation import Conversation, AsyncConversation
+from .conversation import Conversation, AsyncConversation, ThreadSession, AsyncThreadSession
 from .errors import (
     AppServerError,
     AppServerRpcError,
@@ -82,6 +82,8 @@ __all__ = [
     "AppServerClient",
     "AsyncAppServerClient",
     "AppServerConfig",
+    "ThreadSession",
+    "AsyncThreadSession",
     "Conversation",
     "AsyncConversation",
     "AppServerError",

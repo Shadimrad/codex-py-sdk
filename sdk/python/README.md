@@ -10,7 +10,8 @@ Python SDK for `codex app-server` JSON-RPC v2 over stdio.
 - ✅ streaming notification consumption
 - ✅ command/file approval request handling
 - ✅ async client (`AsyncAppServerClient`)
-- ✅ fluent thread abstraction (`Conversation` / `AsyncConversation`)
+- ✅ fluent thread abstraction (`ThreadSession` / `AsyncThreadSession`)
+- ✅ backward-compatible aliases remain available (`conversation*`)
 - ✅ notebook ergonomics helpers (`ask_result`, `stream_text`)
 - ✅ schema-backed typed response helpers (`*_schema`)
 - ✅ lightweight typed wrappers (`*_typed`) for core responses + common notifications (sync + async parity)
@@ -70,12 +71,12 @@ Notebook-oriented helpers:
 ```python
 with AppServerClient() as client:
     client.initialize()
-    conv = client.conversation_start(model="gpt-5")
+    thread = client.thread_start_session(model="gpt-5")
 
-    result = conv.ask_result("Give me one sentence about gravity")
+    result = thread.ask_result("Give me one sentence about gravity")
     print(result.thread_id, result.text)
 
-    for chunk in conv.stream_text("Now stream 3 short words"):
+    for chunk in thread.stream_text("Now stream 3 short words"):
         print(chunk, end="", flush=True)
 ```
 
@@ -202,6 +203,6 @@ scripts/release_rehearsal.sh
 - `CHANGELOG.md` — milestone history for this SDK
 - `CONTRIBUTING.md` — development workflow and quality gates
 - `RELEASE_CHECKLIST.md` — release gate checklist
-- `learning.md` — SDK patterns extracted from top Python SDKs
+- `notebooks/` — practical notebook examples for thread-first workflows
 - `APP_SERVER_V2_NOTES.md` — architecture + method map for Codex app-server v2
 - `examples/notebook_workflow.py` — ipynb-style walkthrough using fake server

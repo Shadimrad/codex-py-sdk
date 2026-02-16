@@ -22,30 +22,30 @@ with AppServerClient(CFG) as client:
     init = client.initialize()
     print("server:", init["serverInfo"]["name"])
 
-    # %% conversation_start + turn_text
-    conv = client.conversation_start(model="gpt-5")
-    turn = conv.turn_text("Say hello in two words")
+    # %% thread_start_session + turn_text
+    thread = client.thread_start_session(model="gpt-5")
+    turn = thread.turn_text("Say hello in two words")
     done = client.wait_for_turn_completed(turn["turn"]["id"])
     print("turn status:", done.params["turn"]["status"])
 
     # %% ask helper (old tuple API)
-    thread_id, answer = client.ask("Summarize: rain is wet.", thread_id=conv.thread_id)
+    thread_id, answer = client.ask("Summarize: rain is wet.", thread_id=thread.thread_id)
     print("ask tuple:", thread_id, answer)
 
     # %% ask_result helper (new ergonomic API)
-    ask_result = conv.ask_result("Name two colors")
+    ask_result = thread.ask_result("Name two colors")
     print("ask_result:", ask_result.thread_id, ask_result.text)
 
     # %% stream raw notifications
-    print("raw stream methods:", [evt.method for evt in conv.stream("stream me")])
+    print("raw stream methods:", [evt.method for evt in thread.stream("stream me")])
 
     # %% stream_text helper (new ergonomic API)
-    print("stream_text chunks:", list(conv.stream_text("stream text")))
+    print("stream_text chunks:", list(thread.stream_text("stream text")))
 
     # %% typed + schema wrappers
-    typed = conv.turn_text_typed("typed please")
+    typed = thread.turn_text_typed("typed please")
     _ = client.wait_for_turn_completed(typed.turn.id)
-    schema = conv.turn_text_schema("schema please")
+    schema = thread.turn_text_schema("schema please")
     _ = client.wait_for_turn_completed(schema.turn.id)
     print("typed turn:", typed.turn.id, "schema turn:", schema.turn.id)
 
@@ -54,15 +54,15 @@ with AppServerClient(CFG) as client:
 async def async_demo() -> None:
     async with AsyncAppServerClient(CFG) as client:
         await client.initialize()
-        conv = await client.conversation_start(model="gpt-5")
+        thread = await client.thread_start_session(model="gpt-5")
 
-        text = await conv.ask("async ask")
+        text = await thread.ask("async ask")
         print("async ask:", text)
 
-        ask_result = await conv.ask_result("async ask_result")
+        ask_result = await thread.ask_result("async ask_result")
         print("async ask_result:", ask_result.text)
 
-        chunks = [chunk async for chunk in conv.stream_text("async stream text")]
+        chunks = [chunk async for chunk in thread.stream_text("async stream text")]
         print("async stream_text chunks:", chunks)
 
 

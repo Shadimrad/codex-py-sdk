@@ -165,7 +165,7 @@ def test_conversation_and_schema_wrappers():
     with make_client() as client:
         client.initialize()
 
-        conv = client.conversation_start(model="gpt-5")
+        conv = client.thread_start_session(model="gpt-5")
         assert conv.thread_id.startswith("thr_")
 
         turn = conv.turn_text_schema("hello")
@@ -195,7 +195,7 @@ def test_async_conversation_and_schema_wrappers():
             started_typed = await client.thread_start_typed(model="gpt-5")
             assert started_typed.thread.id.startswith("thr_")
 
-            conv = await client.conversation_start(model="gpt-5")
+            conv = await client.thread_start_session(model="gpt-5")
             assert conv.thread_id.startswith("thr_")
 
             answer = await conv.ask("hello")

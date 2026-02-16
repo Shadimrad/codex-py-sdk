@@ -14,7 +14,7 @@ if False:  # pragma: no cover
 
 
 @dataclass(slots=True)
-class Conversation:
+class ThreadSession:
     """Fluent thread-scoped helper over :class:`AppServerClient`."""
 
     client: "AppServerClient"
@@ -62,7 +62,7 @@ class Conversation:
 
 
 @dataclass(slots=True)
-class AsyncConversation:
+class AsyncThreadSession:
     """Fluent thread-scoped helper over :class:`AsyncAppServerClient`."""
 
     client: "AsyncAppServerClient"
@@ -108,3 +108,8 @@ class AsyncConversation:
             yield event
             if event.method == "turn/completed" and (event.params or {}).get("turn", {}).get("id") == turn_id:
                 break
+
+
+# Backward-compatible aliases (v2 prefers thread terminology).
+Conversation = ThreadSession
+AsyncConversation = AsyncThreadSession
