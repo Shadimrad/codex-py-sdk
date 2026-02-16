@@ -14,8 +14,17 @@ class TurnResult:
     _usage: ThreadTokenUsageUpdatedNotificationPayload | None = None
     _text: str = ""
 
-    def completed(self) -> TurnCompletedNotificationPayload:
-        return self._completed
+    def turn(self) -> Any:
+        return self._completed.turn
+
+    def turn_id(self) -> str:
+        return self._completed.turn.id
+
+    def status(self) -> str:
+        return self._completed.turn.status
+
+    def error(self) -> Any | None:
+        return self._completed.turn.error
 
     def usage(self) -> ThreadTokenUsageUpdatedNotificationPayload | None:
         return self._usage
