@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Any, AsyncIterator, Iterator
 
 from .models import AskResult, Notification
-from .schema_types import TurnStartResponse as SchemaTurnStartResponse
+from .generated.schema_types import TurnStartResponse as SchemaTurnStartResponse
 from .typed import TurnStartResult as TypedTurnStartResult
 from .typed import TurnSteerResult as TypedTurnSteerResult
 

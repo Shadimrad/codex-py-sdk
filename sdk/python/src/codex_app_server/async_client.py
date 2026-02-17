@@ -6,14 +6,14 @@ from typing import Any, Iterable
 from .client import AppServerClient, AppServerConfig
 from .conversation import AsyncThreadSession
 from .models import AskResult, Notification
-from .protocol_types import (
+from .generated.protocol_types import (
     ThreadListResponse,
     ThreadReadResponse,
     ThreadResumeResponse,
     ThreadStartResponse,
     TurnStartResponse,
 )
-from .schema_types import (
+from .generated.schema_types import (
     AgentMessageDeltaNotificationPayload as SchemaAgentMessageDeltaNotificationPayload,
     ErrorNotificationPayload as SchemaErrorNotificationPayload,
     ModelListResponse as SchemaModelListResponse,

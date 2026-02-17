@@ -33,7 +33,7 @@ from .typed import (
 )
 from .retry import retry_on_overload
 from .conversation import ThreadSession
-from .schema_types import (
+from .generated.schema_types import (
     AgentMessageDeltaNotificationPayload as SchemaAgentMessageDeltaNotificationPayload,
     ErrorNotificationPayload as SchemaErrorNotificationPayload,
     ModelListResponse as SchemaModelListResponse,
@@ -55,7 +55,7 @@ from .schema_types import (
     TurnSteerResponse as SchemaTurnSteerResponse,
     TurnStartedNotificationPayload as SchemaTurnStartedNotificationPayload,
 )
-from .protocol_types import (
+from .generated.protocol_types import (
     ThreadListResponse,
     ThreadReadResponse,
     ThreadResumeResponse,

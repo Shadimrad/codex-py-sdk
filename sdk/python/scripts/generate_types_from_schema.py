@@ -4,7 +4,7 @@
 The generator intentionally focuses on a high-value subset used by the Python SDK,
 including core thread/turn responses and common server notifications.
 
-It emits dataclasses and TypedDict stubs into `src/codex_app_server/schema_types.py`.
+It emits dataclasses and TypedDict stubs into `src/codex_app_server/generated/schema_types.py`.
 """
 
 from __future__ import annotations
@@ -227,7 +227,7 @@ def _render(specs: list[ClassSpec]) -> str:
 
 def main() -> None:
     repo = _repo_root()
-    target = repo / "sdk" / "python" / "src" / "codex_app_server" / "schema_types.py"
+    target = repo / "sdk" / "python" / "src" / "codex_app_server" / "generated" / "schema_types.py"
     specs = _build_specs()
     target.write_text(_render(specs))
     print(f"wrote {target}")

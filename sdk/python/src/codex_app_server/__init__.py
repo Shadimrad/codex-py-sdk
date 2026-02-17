@@ -41,7 +41,7 @@ from .typed import (
     TurnSteerResult,
     TurnStartedEvent,
 )
-from .schema_types import (
+from .generated.schema_types import (
     AgentMessageDeltaNotificationPayload as SchemaAgentMessageDeltaNotificationPayload,
     ErrorNotificationPayload as SchemaErrorNotificationPayload,
     ItemCompletedNotificationPayload as SchemaItemCompletedNotificationPayload,
@@ -65,7 +65,7 @@ from .schema_types import (
     TurnSteerResponse as SchemaTurnSteerResponse,
     TurnStartedNotificationPayload as SchemaTurnStartedNotificationPayload,
 )
-from .protocol_types import (
+from .generated.protocol_types import (
     ThreadListResponse,
     ThreadObject,
     ThreadReadResponse,

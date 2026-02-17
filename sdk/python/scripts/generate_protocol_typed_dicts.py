@@ -7,7 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 SCHEMA_DIR = ROOT / "codex-rs" / "app-server-protocol" / "schema" / "json" / "v2"
-OUT = ROOT / "sdk" / "python" / "src" / "codex_app_server" / "protocol_types.py"
+OUT = ROOT / "sdk" / "python" / "src" / "codex_app_server" / "generated" / "protocol_types.py"
 
 
 def load(name: str) -> dict:

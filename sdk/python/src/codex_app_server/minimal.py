@@ -5,7 +5,7 @@ from typing import Any, Iterator
 
 from .client import AppServerClient, AppServerConfig
 from .models import Notification
-from .schema_types import TurnCompletedNotificationPayload, ThreadTokenUsageUpdatedNotificationPayload
+from .generated.schema_types import TurnCompletedNotificationPayload, ThreadTokenUsageUpdatedNotificationPayload
 
 
 @dataclass(slots=True)
