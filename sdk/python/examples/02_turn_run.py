@@ -1,9 +1,9 @@
-from codex_app_server import Codex
+from codex_app_server import Codex, TextInput
 
 
 with Codex() as codex:
     thread = codex.thread_start(model="gpt-5")
-    result = thread.turn("Give 3 bullets about SIMD.").run()
+    result = thread.turn(TextInput("Give 3 bullets about SIMD.")).run()
 
     print("thread_id:", result.thread_id)
     print("turn_id:", result.turn_id)

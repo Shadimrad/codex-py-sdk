@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from codex_app_server import Codex
+from codex_app_server import Codex, TextInput
 from codex_app_server.client import AppServerConfig
 
 
@@ -36,7 +36,7 @@ def test_minimal_turn_run_and_stream() -> None:
     compacted = codex.thread_compact(thread.id)
     assert compacted is not None
 
-    result = thread.turn("hello").run()
+    result = thread.turn(TextInput("hello")).run()
     assert result.turn_id
     assert result.status == "completed"
     assert isinstance(result.items, list)
@@ -45,11 +45,11 @@ def test_minimal_turn_run_and_stream() -> None:
     usage = result.usage
     assert (usage is None) or (usage.turnId == result.turn_id)
 
-    events = list(thread.turn("hello again").stream())
+    events = list(thread.turn(TextInput("hello again")).stream())
     assert any(e.method == "turn/completed" for e in events)
 
-    started = thread.turn("steer me")
-    steer = codex.turn_steer(thread.id, started.id, "next input")
+    started = thread.turn(TextInput("steer me"))
+    steer = codex.turn_steer(thread.id, started.id, TextInput("next input"))
     assert steer.turnId == started.id
     codex.turn_interrupt(thread.id, started.id)
 

@@ -1,4 +1,4 @@
-from codex_app_server import Codex
+from codex_app_server import Codex, TextInput
 
 
 with Codex() as codex:

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Iterator, Literal, TypedDict
+from typing import Any, Iterator
 
 from .client import AppServerClient, AppServerConfig
 from .models import Notification
@@ -27,41 +27,61 @@ class TurnResult:
     items: list[ThreadItem]
     usage: ThreadTokenUsageUpdatedNotification | None = None
 
-class TextInput(TypedDict):
-    type: Literal["text"]
+@dataclass(slots=True)
+class TextInput:
     text: str
 
 
-class ImageInput(TypedDict):
-    type: Literal["image"]
+@dataclass(slots=True)
+class ImageInput:
     url: str
 
 
-class LocalImageInput(TypedDict):
-    type: Literal["localImage"]
+@dataclass(slots=True)
+class LocalImageInput:
     path: str
 
 
-class SkillInput(TypedDict):
-    type: Literal["skill"]
+@dataclass(slots=True)
+class SkillInput:
     name: str
     path: str
 
 
-class MentionInput(TypedDict):
-    type: Literal["mention"]
+@dataclass(slots=True)
+class MentionInput:
     name: str
     path: str
 
 
 InputItem = TextInput | ImageInput | LocalImageInput | SkillInput | MentionInput
-Input = list[InputItem] | InputItem | str
+Input = list[InputItem] | InputItem
 
 
 @dataclass(slots=True)
 class InitializeResult:
     server_name: str | None = None
     server_version: str | None = None
+
+
+def _to_wire_item(item: InputItem) -> dict[str, Any]:
+    if isinstance(item, TextInput):
+        return {"type": "text", "text": item.text}
+    if isinstance(item, ImageInput):
+        return {"type": "image", "url": item.url}
+    if isinstance(item, LocalImageInput):
+        return {"type": "localImage", "path": item.path}
+    if isinstance(item, SkillInput):
+        return {"type": "skill", "name": item.name, "path": item.path}
+    if isinstance(item, MentionInput):
+        return {"type": "mention", "name": item.name, "path": item.path}
+    raise TypeError(f"unsupported input item: {type(item)!r}")
+
+
+def _to_wire_input(input: Input) -> list[dict[str, Any]]:
+    if isinstance(input, list):
+        return [_to_wire_item(i) for i in input]
+    return [_to_wire_item(input)]
 
 
 class Codex:
@@ -158,7 +178,7 @@ class Codex:
         return ThreadCompactStartResponse.model_validate(result)
 
     def turn_steer(self, thread_id: str, expected_turn_id: str, input: Input) -> TurnSteerResponse:
-        result = self._client.turn_steer(thread_id, expected_turn_id, input)
+        result = self._client.turn_steer(thread_id, expected_turn_id, _to_wire_input(input))
         if not isinstance(result, dict):
             raise TypeError("turn/steer response must be a dict")
         return TurnSteerResponse.model_validate(result)
@@ -179,7 +199,7 @@ class Thread:
     id: str
 
     def turn(self, input: Input, **opts: Any) -> Turn:
-        turn = self._client.turn_start(self.id, input, **opts)
+        turn = self._client.turn_start(self.id, _to_wire_input(input), **opts)
         return Turn(self._client, self.id, turn["turn"]["id"])
 
 

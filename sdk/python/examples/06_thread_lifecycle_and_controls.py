@@ -1,4 +1,4 @@
-from codex_app_server import Codex
+from codex_app_server import Codex, TextInput
 
 
 with Codex() as codex:
@@ -14,8 +14,8 @@ with Codex() as codex:
     _ = codex.thread_compact(thread.id)
 
     # Turn controls
-    turn = thread.turn("Start a task").run()
-    _ = codex.turn_steer(thread.id, turn.turn_id, "Continue with this adjustment")
+    turn = thread.turn(TextInput("Start a task")).run()
+    _ = codex.turn_steer(thread.id, turn.turn_id, TextInput("Continue with this adjustment"))
     codex.turn_interrupt(thread.id, turn.turn_id)
 
     print("Forked thread:", forked.id)

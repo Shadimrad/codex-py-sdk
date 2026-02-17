@@ -8,14 +8,14 @@ Full v2 models are generated into `src/codex_app_server/generated/v2_all/` via `
 ## Minimal public API
 
 ```python
-from codex_app_server import Codex
+from codex_app_server import Codex, TextInput, ImageInput, LocalImageInput
 
 codex = Codex()  # starts + initializes immediately (raises on failure)
 print(codex.metadata.server_name)
 
 thread = codex.thread_start(model="gpt-5")
 
-turn = thread.turn("Explain Newton's method in 3 bullets")
+turn = thread.turn(TextInput("Explain Newton's method in 3 bullets"))
 result = turn.run()  # TurnResult (flat attributes, typed turn items)
 print(result.text)
 print(result.thread_id)
@@ -28,7 +28,7 @@ print(result.usage)    # ThreadTokenUsageUpdatedNotificationPayload | None
 models = codex.models()  # ModelListResponse
 print(models.data[0].id if models.data else None)
 
-turn2 = thread.turn("Now stream this")
+turn2 = thread.turn(TextInput("Now stream this"))
 for event in turn2.stream():
     print(event.method)
 
@@ -64,18 +64,18 @@ codex.close()
 
 ```python
 # plain text
-thread.turn("Describe this image").run()
+thread.turn(TextInput("Describe this image")).run()
 
 # remote image
 thread.turn([
-    {"type": "text", "text": "What is in this image?"},
-    {"type": "image", "url": "https://example.com/cat.jpg"},
+    TextInput("What is in this image?"),
+    ImageInput("https://example.com/cat.jpg"),
 ]).run()
 
 # local image
 thread.turn([
-    {"type": "text", "text": "Read this screenshot"},
-    {"type": "localImage", "path": "./screenshot.png"},
+    TextInput("Read this screenshot"),
+    LocalImageInput("./screenshot.png"),
 ]).run()
 ```
 
