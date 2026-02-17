@@ -15,6 +15,11 @@ from .generated.v2_types import (
     ThreadTokenUsageUpdatedNotification,
     ThreadItem,
 )
+from .generated.v2_all.ThreadStartParams import ThreadStartParams
+from .generated.v2_all.ThreadResumeParams import ThreadResumeParams
+from .generated.v2_all.ThreadListParams import ThreadListParams
+from .generated.v2_all.ThreadForkParams import ThreadForkParams
+from .generated.v2_all.TurnSteerParams import TurnSteerParams
 
 
 @dataclass(slots=True)
@@ -122,25 +127,97 @@ class Codex:
     def close(self) -> None:
         self._client.close()
 
-    def thread_start(self, *, model: str | None = None, **opts: Any) -> Thread:
-        payload = dict(opts)
-        if model is not None:
-            payload["model"] = model
-        started = self._client.thread_start(**payload)
+    def thread_start(
+        self,
+        *,
+        approval_policy: str | None = None,
+        base_instructions: str | None = None,
+        config: dict[str, Any] | None = None,
+        cwd: str | None = None,
+        developer_instructions: str | None = None,
+        ephemeral: bool | None = None,
+        model: str | None = None,
+        model_provider: str | None = None,
+        personality: Any | None = None,
+        sandbox: Any | None = None,
+    ) -> Thread:
+        params = ThreadStartParams.model_validate(
+            {
+                "approvalPolicy": approval_policy,
+                "baseInstructions": base_instructions,
+                "config": config,
+                "cwd": cwd,
+                "developerInstructions": developer_instructions,
+                "ephemeral": ephemeral,
+                "model": model,
+                "modelProvider": model_provider,
+                "personality": personality,
+                "sandbox": sandbox,
+            }
+        ).model_dump(exclude_none=True, mode="json")
+        started = self._client.thread_start(**params)
         return Thread(self._client, started["thread"]["id"])
 
     def thread(self, thread_id: str) -> Thread:
         return Thread(self._client, thread_id)
 
-    def thread_resume(self, thread_id: str, **opts: Any) -> Thread:
-        resumed = self._client.thread_resume(thread_id, **opts)
+    def thread_resume(
+        self,
+        thread_id: str,
+        *,
+        approval_policy: str | None = None,
+        base_instructions: str | None = None,
+        config: dict[str, Any] | None = None,
+        cwd: str | None = None,
+        developer_instructions: str | None = None,
+        model: str | None = None,
+        model_provider: str | None = None,
+        personality: Any | None = None,
+        sandbox: Any | None = None,
+    ) -> Thread:
+        params = ThreadResumeParams.model_validate(
+            {
+                "threadId": thread_id,
+                "approvalPolicy": approval_policy,
+                "baseInstructions": base_instructions,
+                "config": config,
+                "cwd": cwd,
+                "developerInstructions": developer_instructions,
+                "model": model,
+                "modelProvider": model_provider,
+                "personality": personality,
+                "sandbox": sandbox,
+            }
+        ).model_dump(exclude_none=True, mode="json")
+        resumed = self._client.request("thread/resume", params)
         tid = (resumed.get("thread") or {}).get("id")
         if not isinstance(tid, str) or not tid:
             raise ValueError("thread/resume response missing thread.id")
         return Thread(self._client, tid)
 
-    def thread_list(self, **opts: Any) -> ThreadListResponse:
-        result = self._client.thread_list(**opts)
+    def thread_list(
+        self,
+        *,
+        archived: bool | None = None,
+        cursor: str | None = None,
+        cwd: str | None = None,
+        limit: int | None = None,
+        model_providers: list[str] | None = None,
+        sort_key: str | None = None,
+        source_kinds: list[str] | None = None,
+    ) -> ThreadListResponse:
+        params = ThreadListParams.model_validate(
+            {
+                "archived": archived,
+                "cursor": cursor,
+                "cwd": cwd,
+                "limit": limit,
+                "modelProviders": model_providers,
+                "sortKey": sort_key,
+                "sourceKinds": source_kinds,
+            }
+        ).model_dump(exclude_none=True, mode="json")
+        result = self._client.thread_list(**params)
         if not isinstance(result, dict):
             raise TypeError("thread/list response must be a dict")
         return ThreadListResponse.model_validate(result)
@@ -151,8 +228,33 @@ class Codex:
             raise TypeError("thread/read response must be a dict")
         return ThreadReadResponse.model_validate(result)
 
-    def thread_fork(self, thread_id: str, **opts: Any) -> Thread:
-        forked = self._client.thread_fork(thread_id, **opts)
+    def thread_fork(
+        self,
+        thread_id: str,
+        *,
+        approval_policy: str | None = None,
+        base_instructions: str | None = None,
+        config: dict[str, Any] | None = None,
+        cwd: str | None = None,
+        developer_instructions: str | None = None,
+        model: str | None = None,
+        model_provider: str | None = None,
+        sandbox: Any | None = None,
+    ) -> Thread:
+        params = ThreadForkParams.model_validate(
+            {
+                "threadId": thread_id,
+                "approvalPolicy": approval_policy,
+                "baseInstructions": base_instructions,
+                "config": config,
+                "cwd": cwd,
+                "developerInstructions": developer_instructions,
+                "model": model,
+                "modelProvider": model_provider,
+                "sandbox": sandbox,
+            }
+        ).model_dump(exclude_none=True, mode="json")
+        forked = self._client.request("thread/fork", params)
         tid = (forked.get("thread") or {}).get("id")
         if not isinstance(tid, str) or not tid:
             raise ValueError("thread/fork response missing thread.id")
@@ -178,7 +280,14 @@ class Codex:
         return ThreadCompactStartResponse.model_validate(result)
 
     def turn_steer(self, thread_id: str, expected_turn_id: str, input: Input) -> TurnSteerResponse:
-        result = self._client.turn_steer(thread_id, expected_turn_id, _to_wire_input(input))
+        params = TurnSteerParams.model_validate(
+            {
+                "threadId": thread_id,
+                "expectedTurnId": expected_turn_id,
+                "input": _to_wire_input(input),
+            }
+        ).model_dump(exclude_none=True, mode="json")
+        result = self._client.request("turn/steer", params)
         if not isinstance(result, dict):
             raise TypeError("turn/steer response must be a dict")
         return TurnSteerResponse.model_validate(result)
@@ -198,8 +307,8 @@ class Thread:
     _client: AppServerClient
     id: str
 
-    def turn(self, input: Input, **opts: Any) -> Turn:
-        turn = self._client.turn_start(self.id, _to_wire_input(input), **opts)
+    def turn(self, input: Input) -> Turn:
+        turn = self._client.turn_start(self.id, _to_wire_input(input))
         return Turn(self._client, self.id, turn["turn"]["id"])
 
 

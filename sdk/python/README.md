@@ -40,12 +40,12 @@ codex.close()
 - `Codex()` (constructor auto-starts + initializes)
 - `Codex.metadata: InitializeResult`
 - `Codex.close()`
-- `Codex.thread_start(model=None, **opts) -> Thread`
+- `Codex.thread_start(...) -> Thread`
 - `Codex.thread(thread_id) -> Thread`
-- `Codex.thread_resume(thread_id, **opts) -> Thread`
-- `Codex.thread_list(**opts) -> ThreadListResponse`
+- `Codex.thread_resume(thread_id, ...) -> Thread`
+- `Codex.thread_list(...) -> ThreadListResponse`
 - `Codex.thread_read(thread_id, include_turns=False) -> ThreadReadResponse`
-- `Codex.thread_fork(thread_id, **opts) -> Thread`
+- `Codex.thread_fork(thread_id, ...) -> Thread`
 - `Codex.thread_archive(thread_id) -> None`
 - `Codex.thread_unarchive(thread_id) -> Thread`
 - `Codex.thread_set_name(thread_id, name) -> None`
@@ -54,7 +54,7 @@ codex.close()
 - `Codex.turn_interrupt(thread_id, turn_id) -> None`
 - `Codex.models(include_hidden=False) -> ModelListResponse`
 - `Thread.id`
-- `Thread.turn(input, **opts) -> Turn`
+- `Thread.turn(input) -> Turn`
 - `Turn.stream() -> Iterator[Notification]` (all turn notifications/events)
 - `Turn.run() -> TurnResult` (`thread_id`, `turn_id`, `status`, `error`, `text`, `items: list[ThreadItem]`, optional `usage`)
 
