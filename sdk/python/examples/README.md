@@ -9,6 +9,7 @@ This directory shows practical user-facing usage patterns for the Python SDK.
 - `03_turn_stream_events.py` — stream full turn notifications/events.
 - `04_models_and_metadata.py` — inspect startup metadata and model list.
 - `05_existing_thread.py` — attach to an existing thread id and continue.
+- `06_thread_lifecycle_and_controls.py` — resume/list/read/fork/archive/unarchive/set_name/compact + steer/interrupt.
 - `legacy_appserver_client_basic.py` — low-level `AppServerClient` usage for advanced/internal needs.
 
 ## Run

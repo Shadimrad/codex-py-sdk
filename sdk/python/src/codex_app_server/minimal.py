@@ -5,14 +5,15 @@ from typing import Any, Iterator, Literal, TypedDict
 
 from .client import AppServerClient, AppServerConfig
 from .models import Notification
-from .generated.schema_types import (
+from .generated.v2_types import (
     ModelListResponse,
     ThreadReadResponse,
     ThreadListResponse,
     ThreadCompactStartResponse,
     TurnSteerResponse,
     TurnCompletedNotificationPayload,
-    ThreadTokenUsageUpdatedNotificationPayload,
+    ThreadTokenUsageUpdatedNotification,
+    ThreadItem,
 )
 
 
@@ -23,8 +24,8 @@ class TurnResult:
     status: str
     error: Any | None
     text: str
-    items: list[Any]
-    usage: ThreadTokenUsageUpdatedNotificationPayload | None = None
+    items: list[ThreadItem]
+    usage: ThreadTokenUsageUpdatedNotification | None = None
 
 class TextInput(TypedDict):
     type: Literal["text"]
@@ -122,13 +123,13 @@ class Codex:
         result = self._client.thread_list(**opts)
         if not isinstance(result, dict):
             raise TypeError("thread/list response must be a dict")
-        return ThreadListResponse.from_dict(result)
+        return ThreadListResponse.model_validate(result)
 
     def thread_read(self, thread_id: str, *, include_turns: bool = False) -> ThreadReadResponse:
         result = self._client.thread_read(thread_id, include_turns=include_turns)
         if not isinstance(result, dict):
             raise TypeError("thread/read response must be a dict")
-        return ThreadReadResponse.from_dict(result)
+        return ThreadReadResponse.model_validate(result)
 
     def thread_fork(self, thread_id: str, **opts: Any) -> Thread:
         forked = self._client.thread_fork(thread_id, **opts)
@@ -154,13 +155,13 @@ class Codex:
         result = self._client.request("thread/compact", {"threadId": thread_id})
         if not isinstance(result, dict):
             raise TypeError("thread/compact response must be a dict")
-        return ThreadCompactStartResponse.from_dict(result)
+        return ThreadCompactStartResponse.model_validate(result)
 
     def turn_steer(self, thread_id: str, expected_turn_id: str, input: Input) -> TurnSteerResponse:
         result = self._client.turn_steer(thread_id, expected_turn_id, input)
         if not isinstance(result, dict):
             raise TypeError("turn/steer response must be a dict")
-        return TurnSteerResponse.from_dict(result)
+        return TurnSteerResponse.model_validate(result)
 
     def turn_interrupt(self, thread_id: str, turn_id: str) -> None:
         self._client.turn_interrupt(thread_id, turn_id)
@@ -169,7 +170,7 @@ class Codex:
         result = self._client.model_list(include_hidden=include_hidden)
         if not isinstance(result, dict):
             raise TypeError("model/list response must be a dict")
-        return ModelListResponse.from_dict(result)
+        return ModelListResponse.model_validate(result)
 
 
 @dataclass(slots=True)
@@ -199,7 +200,7 @@ class Turn:
     def run(self) -> TurnResult:
         """Consume turn events and return typed `TurnResult` (completed + usage + text)."""
         completed_payload: dict[str, Any] | None = None
-        usage: ThreadTokenUsageUpdatedNotificationPayload | None = None
+        usage: ThreadTokenUsageUpdatedNotification | None = None
         chunks: list[str] = []
 
         for event in self.stream():
@@ -208,18 +209,20 @@ class Turn:
             elif event.method == "thread/tokenUsageUpdated":
                 params = event.params or {}
                 if params.get("turnId") == self.id:
-                    usage = ThreadTokenUsageUpdatedNotificationPayload.from_dict(params)
+                    usage = ThreadTokenUsageUpdatedNotification.model_validate(params)
             elif event.method == "turn/completed" and (event.params or {}).get("turn", {}).get("id") == self.id:
                 completed_payload = event.params or {}
 
         if completed_payload is None:
             raise RuntimeError("turn completed event not received")
 
-        completed = TurnCompletedNotificationPayload.from_dict(completed_payload)
+        completed = TurnCompletedNotificationPayload.model_validate(completed_payload)
+        status = completed.turn.status
+        status_str = status.value if hasattr(status, "value") else str(status)
         return TurnResult(
             thread_id=completed.threadId,
             turn_id=completed.turn.id,
-            status=completed.turn.status,
+            status=status_str,
             error=completed.turn.error,
             text="".join(chunks),
             items=list(completed.turn.items or []),

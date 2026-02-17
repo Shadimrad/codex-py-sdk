@@ -11,6 +11,7 @@ def test_generated_files_are_up_to_date():
     # Regenerate contract artifacts.
     subprocess.run(["python3", "scripts/generate_types_from_schema.py"], cwd=ROOT, check=True)
     subprocess.run(["python3", "scripts/generate_protocol_typed_dicts.py"], cwd=ROOT, check=True)
+    subprocess.run(["python3", "scripts/generate_all_v2_types.py"], cwd=ROOT, check=True)
 
     # Ensure no diff in generated targets after regeneration.
     diff = subprocess.run(
@@ -20,6 +21,7 @@ def test_generated_files_are_up_to_date():
             "--",
             "src/codex_app_server/generated/schema_types.py",
             "src/codex_app_server/generated/protocol_types.py",
+            "src/codex_app_server/generated/v2_all",
         ],
         cwd=ROOT,
         capture_output=True,

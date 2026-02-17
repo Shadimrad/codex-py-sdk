@@ -3,6 +3,7 @@
 Python SDK for `codex app-server` JSON-RPC v2 over stdio.
 
 Protocol/schema generated types live under `src/codex_app_server/generated/`.
+Full v2 models are generated into `src/codex_app_server/generated/v2_all/` via `datamodel-code-generator` (`scripts/generate_all_v2_types.py`).
 
 ## Minimal public API
 
@@ -15,7 +16,7 @@ print(codex.metadata.server_name)
 thread = codex.thread_start(model="gpt-5")
 
 turn = thread.turn("Explain Newton's method in 3 bullets")
-result = turn.run()  # TurnResult (flat attributes)
+result = turn.run()  # TurnResult (flat attributes, typed turn items)
 print(result.text)
 print(result.thread_id)
 print(result.turn_id)
@@ -25,7 +26,7 @@ print(result.error)
 print(result.usage)    # ThreadTokenUsageUpdatedNotificationPayload | None
 
 models = codex.models()  # ModelListResponse
-print(models.data[0]["id"] if models.data else None)
+print(models.data[0].id if models.data else None)
 
 turn2 = thread.turn("Now stream this")
 for event in turn2.stream():
@@ -55,7 +56,7 @@ codex.close()
 - `Thread.id`
 - `Thread.turn(input, **opts) -> Turn`
 - `Turn.stream() -> Iterator[Notification]` (all turn notifications/events)
-- `Turn.run() -> TurnResult` (`completed`, optional `usage`)
+- `Turn.run() -> TurnResult` (`thread_id`, `turn_id`, `status`, `error`, `text`, `items: list[ThreadItem]`, optional `usage`)
 
 `input` is unified: string, typed input item, or list of typed input items.
 

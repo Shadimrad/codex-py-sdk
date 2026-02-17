@@ -12,6 +12,7 @@ from .minimal import (
     SkillInput,
     MentionInput,
 )
+from .generated.v2_types import ThreadItem
 
 __version__ = "0.2.0"
 
@@ -29,4 +30,5 @@ __all__ = [
     "LocalImageInput",
     "SkillInput",
     "MentionInput",
+    "ThreadItem",
 ]

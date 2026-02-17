@@ -13,6 +13,22 @@ thread_counter = 0
 turn_counter = 0
 state = {"overload_once_seen": False}
 
+
+def thread_obj(tid: str, preview: str = ""):
+    return {
+        "id": tid,
+        "cliVersion": "0.0.0-test",
+        "createdAt": 0,
+        "updatedAt": 0,
+        "cwd": "/tmp",
+        "modelProvider": "openai",
+        "preview": preview,
+        "source": "appServer",
+        "turns": [],
+        "path": None,
+        "gitInfo": None,
+    }
+
 for raw in sys.stdin:
     raw = raw.strip()
     if not raw:
@@ -29,16 +45,16 @@ for raw in sys.stdin:
         elif method == "thread/start":
             thread_counter += 1
             tid = f"thr_{thread_counter}"
-            send({"id": req_id, "result": {"thread": {"id": tid, "preview": ""}}})
-            send({"method": "thread/started", "params": {"thread": {"id": tid}}})
+            send({"id": req_id, "result": {"thread": thread_obj(tid)}})
+            send({"method": "thread/started", "params": {"thread": thread_obj(tid)}})
         elif method == "thread/resume":
             tid = params["threadId"]
-            send({"id": req_id, "result": {"thread": {"id": tid}}})
+            send({"id": req_id, "result": {"thread": thread_obj(tid)}})
         elif method == "thread/list":
-            send({"id": req_id, "result": {"data": [{"id": "thr_1"}], "nextCursor": None}})
+            send({"id": req_id, "result": {"data": [thread_obj("thr_1")], "nextCursor": None}})
         elif method == "thread/read":
             tid = params["threadId"]
-            send({"id": req_id, "result": {"thread": {"id": tid, "turns": []}}})
+            send({"id": req_id, "result": {"thread": thread_obj(tid)}})
         elif method == "thread/fork":
             thread_counter += 1
             tid = f"thr_{thread_counter}"
@@ -51,7 +67,7 @@ for raw in sys.stdin:
                         "model": "gpt-5",
                         "modelProvider": "openai",
                         "sandbox": {"type": "workspace-write"},
-                        "thread": {"id": tid, "preview": "forked"},
+                        "thread": thread_obj(tid, preview="forked"),
                     },
                 }
             )
@@ -59,7 +75,7 @@ for raw in sys.stdin:
             send({"id": req_id, "result": {}})
         elif method == "thread/unarchive":
             tid = params["threadId"]
-            send({"id": req_id, "result": {"thread": {"id": tid, "preview": ""}}})
+            send({"id": req_id, "result": {"thread": thread_obj(tid)}})
         elif method == "thread/setName":
             send({"id": req_id, "result": {}})
             send(
@@ -98,7 +114,7 @@ for raw in sys.stdin:
             send({"method": "item/agentMessage/delta", "params": {"itemId": "i1", "delta": "hello "}})
             send({"method": "item/agentMessage/delta", "params": {"itemId": "i1", "delta": "world"}})
             send({"method": "item/started", "params": {"threadId": tid, "turnId": turn_id, "item": {"id": "i1", "type": "agentMessage"}}})
-            send({"method": "turn/completed", "params": {"threadId": tid, "turn": {"id": turn_id, "status": "completed"}}})
+            send({"method": "turn/completed", "params": {"threadId": tid, "turn": {"id": turn_id, "status": "completed", "items": []}}})
             send({"method": "item/completed", "params": {"threadId": tid, "turnId": turn_id, "item": {"id": "i1", "type": "agentMessage", "text": "hello world"}}})
             send(
                 {

@@ -7,4 +7,4 @@ with Codex() as codex:
     models = codex.models()
     print("models.count:", len(models.data))
     if models.data:
-        print("first model id:", models.data[0].get("id"))
+        print("first model id:", models.data[0].id)
