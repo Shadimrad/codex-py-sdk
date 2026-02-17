@@ -9,10 +9,8 @@ Protocol/schema generated types live under `src/codex_app_server/generated/`.
 ```python
 from codex_app_server import Codex
 
-codex = Codex()
-codex.start()
-init = codex.initialize()
-print(init.server_name)
+codex = Codex()  # starts + initializes immediately (raises on failure)
+print(codex.init().server_name)
 
 thread = codex.thread_start(model="gpt-5")
 
@@ -38,8 +36,8 @@ codex.close()
 
 ## Surface
 
-- `Codex.start()`
-- `Codex.initialize()`
+- `Codex()` (constructor auto-starts + initializes)
+- `Codex.init() -> InitializeResult`
 - `Codex.close()`
 - `Codex.thread_start(model=None, **opts) -> Thread`
 - `Codex.thread(thread_id) -> Thread`

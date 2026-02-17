@@ -11,8 +11,7 @@ FAKE = HERE / "fake_app_server.py"
 
 def test_minimal_turn_run_and_stream() -> None:
     codex = Codex(AppServerConfig(launch_args_override=("python3", str(FAKE))))
-    codex.start()
-    codex.initialize()
+    assert codex.init().server_name == "fake"
 
     thread = codex.thread_start(model="gpt-5")
 

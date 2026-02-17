@@ -34,16 +34,25 @@ class Model:
 
 
 class Codex:
-    """Minimal public SDK surface for app-server v2."""
+    """Minimal public SDK surface for app-server v2.
+
+    Constructor is eager: it starts and initializes the app-server immediately.
+    Errors are raised directly from constructor for Pythonic fail-fast behavior.
+    """
 
     def __init__(self, config: AppServerConfig | None = None) -> None:
         self._client = AppServerClient(config=config)
-
-    def start(self) -> None:
         self._client.start()
+        self._init = self._parse_initialize(self._client.initialize())
 
-    def initialize(self) -> InitializeResult:
-        payload = self._client.initialize()
+    def __enter__(self) -> "Codex":
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        self.close()
+
+    @staticmethod
+    def _parse_initialize(payload: dict[str, Any]) -> InitializeResult:
         server = payload.get("serverInfo") if isinstance(payload, dict) else None
         if not isinstance(server, dict):
             return InitializeResult()
@@ -51,6 +60,10 @@ class Codex:
             server_name=server.get("name"),
             server_version=server.get("version"),
         )
+
+    def init(self) -> InitializeResult:
+        """Return startup initialize metadata captured during construction."""
+        return self._init
 
     def close(self) -> None:
         self._client.close()
