@@ -56,6 +56,10 @@ cd sdk/python
 python -m pip install -e .
 ```
 
+## Examples
+
+See `examples/README.md` for UX-focused examples covering constructor flow, run, streaming events, metadata/models, and existing-thread continuation.
+
 ## Tests
 
 ```bash
