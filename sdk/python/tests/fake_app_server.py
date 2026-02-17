@@ -1,0 +1,182 @@
+from __future__ import annotations
+
+import json
+import sys
+
+
+def send(obj):
+    sys.stdout.write(json.dumps(obj) + "\n")
+    sys.stdout.flush()
+
+
+thread_counter = 0
+turn_counter = 0
+state = {"overload_once_seen": False}
+
+
+def thread_obj(tid: str, preview: str = ""):
+    return {
+        "id": tid,
+        "cliVersion": "0.0.0-test",
+        "createdAt": 0,
+        "updatedAt": 0,
+        "cwd": "/tmp",
+        "modelProvider": "openai",
+        "preview": preview,
+        "source": "appServer",
+        "turns": [],
+        "path": None,
+        "gitInfo": None,
+    }
+
+for raw in sys.stdin:
+    raw = raw.strip()
+    if not raw:
+        continue
+    msg = json.loads(raw)
+
+    if "method" in msg and msg.get("id") is not None:
+        method = msg["method"]
+        req_id = msg["id"]
+        params = msg.get("params") or {}
+
+        if method == "initialize":
+            send({"id": req_id, "result": {"serverInfo": {"name": "fake"}}})
+        elif method == "thread/start":
+            thread_counter += 1
+            tid = f"thr_{thread_counter}"
+            send({"id": req_id, "result": {"thread": thread_obj(tid)}})
+            send({"method": "thread/started", "params": {"thread": thread_obj(tid)}})
+        elif method == "thread/resume":
+            tid = params["threadId"]
+            send({"id": req_id, "result": {"thread": thread_obj(tid)}})
+        elif method == "thread/list":
+            send({"id": req_id, "result": {"data": [thread_obj("thr_1")], "nextCursor": None}})
+        elif method == "thread/read":
+            tid = params["threadId"]
+            send({"id": req_id, "result": {"thread": thread_obj(tid)}})
+        elif method == "thread/fork":
+            thread_counter += 1
+            tid = f"thr_{thread_counter}"
+            send(
+                {
+                    "id": req_id,
+                    "result": {
+                        "approvalPolicy": "on-request",
+                        "cwd": "/tmp",
+                        "model": "gpt-5",
+                        "modelProvider": "openai",
+                        "sandbox": {"type": "workspace-write"},
+                        "thread": thread_obj(tid, preview="forked"),
+                    },
+                }
+            )
+        elif method == "thread/archive":
+            send({"id": req_id, "result": {}})
+        elif method == "thread/unarchive":
+            tid = params["threadId"]
+            send({"id": req_id, "result": {"thread": thread_obj(tid)}})
+        elif method == "thread/setName":
+            send({"id": req_id, "result": {}})
+            send(
+                {
+                    "method": "thread/nameUpdated",
+                    "params": {"threadId": params.get("threadId", ""), "threadName": params.get("name")},
+                }
+            )
+        elif method == "thread/compact":
+            send({"id": req_id, "result": {"compact": {"id": "cmp_1"}}})
+        elif method == "turn/start":
+            turn_counter += 1
+            turn_id = f"turn_{turn_counter}"
+            tid = params["threadId"]
+            send({"id": req_id, "result": {"turn": {"id": turn_id, "status": "inProgress"}}})
+            send({"method": "turn/started", "params": {"turn": {"id": turn_id}}})
+
+            if params.get("requireApproval"):
+                send(
+                    {
+                        "id": "approval-1",
+                        "method": "item/commandExecution/requestApproval",
+                        "params": {
+                            "threadId": tid,
+                            "turnId": turn_id,
+                            "itemId": "cmd-1",
+                            "command": "echo hi",
+                        },
+                    }
+                )
+                # Wait for client response before proceeding.
+                raw_response = sys.stdin.readline()
+                if raw_response:
+                    _ = json.loads(raw_response)
+
+            send({"method": "item/agentMessage/delta", "params": {"itemId": "i1", "delta": "hello "}})
+            send({"method": "item/agentMessage/delta", "params": {"itemId": "i1", "delta": "world"}})
+            send({"method": "item/started", "params": {"threadId": tid, "turnId": turn_id, "item": {"id": "i1", "type": "agentMessage"}}})
+            send({"method": "turn/completed", "params": {"threadId": tid, "turn": {"id": turn_id, "status": "completed", "items": []}}})
+            send({"method": "item/completed", "params": {"threadId": tid, "turnId": turn_id, "item": {"id": "i1", "type": "agentMessage", "text": "hello world"}}})
+            send(
+                {
+                    "method": "thread/tokenUsageUpdated",
+                    "params": {
+                        "threadId": tid,
+                        "turnId": turn_id,
+                        "tokenUsage": {
+                            "last": {
+                                "cachedInputTokens": 1,
+                                "inputTokens": 2,
+                                "outputTokens": 3,
+                                "reasoningOutputTokens": 4,
+                                "totalTokens": 10,
+                            },
+                            "total": {
+                                "cachedInputTokens": 1,
+                                "inputTokens": 2,
+                                "outputTokens": 3,
+                                "reasoningOutputTokens": 4,
+                                "totalTokens": 10,
+                            },
+                            "modelContextWindow": 200000,
+                        },
+                    },
+                }
+            )
+        elif method == "turn/interrupt":
+            send({"id": req_id, "result": {}})
+        elif method == "model/list":
+            send({"id": req_id, "result": {"data": [{"id": "gpt-5"}]}})
+        elif method == "turn/steer":
+            send({"id": req_id, "result": {"turnId": params.get("expectedTurnId", "")}})
+        elif method == "test/overload-once":
+            if not state["overload_once_seen"]:
+                state["overload_once_seen"] = True
+                send(
+                    {
+                        "id": req_id,
+                        "error": {
+                            "code": -32001,
+                            "message": "server busy",
+                            "data": {"codex_error_info": "server_overloaded"},
+                        },
+                    }
+                )
+            else:
+                send({"id": req_id, "result": {"ok": True}})
+        elif method == "test/always-overload":
+            send(
+                {
+                    "id": req_id,
+                    "error": {
+                        "code": -32001,
+                        "message": "retry limit exceeded",
+                        "data": {"codex_error_info": "server_overloaded"},
+                    },
+                }
+            )
+        else:
+            send({"id": req_id, "error": {"code": -32601, "message": f"unknown method {method}"}})
+
+    elif "method" in msg and msg.get("id") is None:
+        # notifications from client (e.g. initialized)
+        pass
