@@ -6,7 +6,8 @@ import asyncio
 
 import pytest
 
-from codex_app_server import AppServerClient, AppServerConfig, AsyncAppServerClient
+from codex_app_server.client import AppServerClient, AppServerConfig
+from codex_app_server.async_client import AsyncAppServerClient
 from codex_app_server.errors import MethodNotFoundError, RetryLimitExceededError, ServerBusyError
 
 

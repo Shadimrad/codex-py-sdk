@@ -68,11 +68,6 @@ thread.turn([
 ]).run()
 ```
 
-## Codex vs AppServerClient
-
-- `Codex`: ergonomic public API (constructor auto-start/init, thread/turn UX types).
-- `AppServerClient`: low-level transport/RPC API (advanced/internal use).
-
 ## Install
 
 ```bash

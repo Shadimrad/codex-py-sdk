@@ -5,7 +5,7 @@ import shutil
 
 import pytest
 
-from codex_app_server import AppServerClient
+from codex_app_server.client import AppServerClient
 
 
 pytestmark = pytest.mark.skipif(

@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from codex_app_server import Codex, AppServerConfig
+from codex_app_server import Codex
+from codex_app_server.client import AppServerConfig
 
 
 HERE = Path(__file__).parent
