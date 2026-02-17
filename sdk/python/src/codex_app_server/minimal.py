@@ -53,9 +53,11 @@ class Codex:
 
     @staticmethod
     def _parse_initialize(payload: dict[str, Any]) -> InitializeResult:
-        server = payload.get("serverInfo") if isinstance(payload, dict) else None
+        if not isinstance(payload, dict):
+            raise TypeError("initialize response must be a dict")
+        server = payload.get("serverInfo")
         if not isinstance(server, dict):
-            return InitializeResult()
+            raise ValueError("initialize response missing serverInfo")
         return InitializeResult(
             server_name=server.get("name"),
             server_version=server.get("version"),
@@ -81,11 +83,20 @@ class Codex:
 
     def models(self, *, include_hidden: bool = False) -> list[Model]:
         result = self._client.model_list(include_hidden=include_hidden)
-        raw_models = result.get("models") or result.get("data") or []
+        if not isinstance(result, dict):
+            raise TypeError("model/list response must be a dict")
+        raw_models = result.get("data")
+        if not isinstance(raw_models, list):
+            raise ValueError("model/list response missing data list")
         out: list[Model] = []
         for m in raw_models:
-            if isinstance(m, dict):
-                out.append(Model(id=str(m.get("id", "")), name=m.get("name")))
+            if not isinstance(m, dict):
+                raise TypeError("model entries must be objects")
+            model_id = m.get("id")
+            if not isinstance(model_id, str) or not model_id:
+                raise ValueError("model entry missing id")
+            name = m.get("name")
+            out.append(Model(id=model_id, name=name if isinstance(name, str) else None))
         return out
 
 
