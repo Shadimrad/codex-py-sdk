@@ -9,7 +9,8 @@ from codex_app_server import Codex
 
 codex = Codex()
 codex.start()
-codex.initialize()
+init = codex.initialize()
+print(init.server_name)
 
 thread = codex.thread_start(model="gpt-5")
 
@@ -22,6 +23,9 @@ print(result.status)   # completed / interrupted / failed
 print(result.items)
 print(result.error)
 print(result.usage)    # ThreadTokenUsageUpdatedNotificationPayload | None
+
+models = codex.models()
+print(models[0].id if models else None)
 
 turn2 = thread.turn("Now stream this")
 for event in turn2.stream():

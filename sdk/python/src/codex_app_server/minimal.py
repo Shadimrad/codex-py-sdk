@@ -21,6 +21,18 @@ class TurnResult:
 Input = list[dict[str, Any]] | dict[str, Any] | str
 
 
+@dataclass(slots=True)
+class InitializeResult:
+    server_name: str | None = None
+    server_version: str | None = None
+
+
+@dataclass(slots=True)
+class Model:
+    id: str
+    name: str | None = None
+
+
 class Codex:
     """Minimal public SDK surface for app-server v2."""
 
@@ -30,8 +42,15 @@ class Codex:
     def start(self) -> None:
         self._client.start()
 
-    def initialize(self) -> dict[str, Any]:
-        return self._client.initialize()
+    def initialize(self) -> InitializeResult:
+        payload = self._client.initialize()
+        server = payload.get("serverInfo") if isinstance(payload, dict) else None
+        if not isinstance(server, dict):
+            return InitializeResult()
+        return InitializeResult(
+            server_name=server.get("name"),
+            server_version=server.get("version"),
+        )
 
     def close(self) -> None:
         self._client.close()
@@ -46,9 +65,14 @@ class Codex:
     def thread(self, thread_id: str) -> Thread:
         return Thread(self._client, thread_id)
 
-    def models(self, *, include_hidden: bool = False) -> list[dict[str, Any]]:
+    def models(self, *, include_hidden: bool = False) -> list[Model]:
         result = self._client.model_list(include_hidden=include_hidden)
-        return result.get("models", [])
+        raw_models = result.get("models") or result.get("data") or []
+        out: list[Model] = []
+        for m in raw_models:
+            if isinstance(m, dict):
+                out.append(Model(id=str(m.get("id", "")), name=m.get("name")))
+        return out
 
 
 @dataclass(slots=True)
