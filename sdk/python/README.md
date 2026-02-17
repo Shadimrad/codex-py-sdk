@@ -88,7 +88,7 @@ python -m pip install -e .
 
 ## Examples
 
-See `examples/README.md` for UX-focused examples covering constructor flow, run, streaming events, metadata/models, and existing-thread continuation.
+See `examples/README.md` for UX-focused examples covering constructor flow, run, streaming events, metadata/models, existing-thread continuation, and image+text turns.
 
 ## Tests
 
