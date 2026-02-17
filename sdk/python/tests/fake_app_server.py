@@ -68,6 +68,8 @@ for raw in sys.stdin:
                     "params": {"threadId": params.get("threadId", ""), "threadName": params.get("name")},
                 }
             )
+        elif method == "thread/compact":
+            send({"id": req_id, "result": {"compact": {"id": "cmp_1"}}})
         elif method == "turn/start":
             turn_counter += 1
             turn_id = f"turn_{turn_counter}"

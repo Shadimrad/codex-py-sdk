@@ -23,6 +23,7 @@ TARGET_SCHEMAS = {
     "ThreadArchiveResponse": "ThreadArchiveResponse.json",
     "ThreadUnarchiveResponse": "ThreadUnarchiveResponse.json",
     "ThreadSetNameResponse": "ThreadSetNameResponse.json",
+    "ThreadCompactStartResponse": "ThreadCompactStartResponse.json",
     "TurnStartResponse": "TurnStartResponse.json",
     "TurnSteerResponse": "TurnSteerResponse.json",
     "ModelListResponse": "ModelListResponse.json",

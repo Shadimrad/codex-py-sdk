@@ -41,6 +41,16 @@ codex.close()
 - `Codex.close()`
 - `Codex.thread_start(model=None, **opts) -> Thread`
 - `Codex.thread(thread_id) -> Thread`
+- `Codex.thread_resume(thread_id, **opts) -> Thread`
+- `Codex.thread_list(**opts) -> ThreadListResponse`
+- `Codex.thread_read(thread_id, include_turns=False) -> ThreadReadResponse`
+- `Codex.thread_fork(thread_id, **opts) -> Thread`
+- `Codex.thread_archive(thread_id) -> None`
+- `Codex.thread_unarchive(thread_id) -> Thread`
+- `Codex.thread_set_name(thread_id, name) -> None`
+- `Codex.thread_compact(thread_id) -> ThreadCompactStartResponse`
+- `Codex.turn_steer(thread_id, expected_turn_id, input) -> TurnSteerResponse`
+- `Codex.turn_interrupt(thread_id, turn_id) -> None`
 - `Codex.models(include_hidden=False) -> ModelListResponse`
 - `Thread.id`
 - `Thread.turn(input, **opts) -> Turn`

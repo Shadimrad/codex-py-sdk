@@ -248,6 +248,19 @@ class ThreadSetNameResponse:
         return cls()
 
 
+class ThreadCompactStartResponseDict(TypedDict, total=False):
+    pass
+
+@dataclass(slots=True, kw_only=True)
+class ThreadCompactStartResponse:
+    pass
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "ThreadCompactStartResponse":
+        payload = payload or {}
+        return cls()
+
+
 class TurnStartResponseDict(TypedDict, total=False):
     turn: Turn
 
@@ -487,6 +500,7 @@ __all__ = [
     "ThreadArchiveResponse",
     "ThreadUnarchiveResponse",
     "ThreadSetNameResponse",
+    "ThreadCompactStartResponse",
     "TurnStartResponse",
     "TurnSteerResponse",
     "ModelListResponse",
@@ -509,6 +523,7 @@ __all__ = [
     "ThreadArchiveResponseDict",
     "ThreadUnarchiveResponseDict",
     "ThreadSetNameResponseDict",
+    "ThreadCompactStartResponseDict",
     "TurnStartResponseDict",
     "TurnSteerResponseDict",
     "ModelListResponseDict",

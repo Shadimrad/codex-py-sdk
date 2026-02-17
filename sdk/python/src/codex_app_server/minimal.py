@@ -7,6 +7,10 @@ from .client import AppServerClient, AppServerConfig
 from .models import Notification
 from .generated.schema_types import (
     ModelListResponse,
+    ThreadReadResponse,
+    ThreadListResponse,
+    ThreadCompactStartResponse,
+    TurnSteerResponse,
     TurnCompletedNotificationPayload,
     ThreadTokenUsageUpdatedNotificationPayload,
 )
@@ -106,6 +110,60 @@ class Codex:
 
     def thread(self, thread_id: str) -> Thread:
         return Thread(self._client, thread_id)
+
+    def thread_resume(self, thread_id: str, **opts: Any) -> Thread:
+        resumed = self._client.thread_resume(thread_id, **opts)
+        tid = (resumed.get("thread") or {}).get("id")
+        if not isinstance(tid, str) or not tid:
+            raise ValueError("thread/resume response missing thread.id")
+        return Thread(self._client, tid)
+
+    def thread_list(self, **opts: Any) -> ThreadListResponse:
+        result = self._client.thread_list(**opts)
+        if not isinstance(result, dict):
+            raise TypeError("thread/list response must be a dict")
+        return ThreadListResponse.from_dict(result)
+
+    def thread_read(self, thread_id: str, *, include_turns: bool = False) -> ThreadReadResponse:
+        result = self._client.thread_read(thread_id, include_turns=include_turns)
+        if not isinstance(result, dict):
+            raise TypeError("thread/read response must be a dict")
+        return ThreadReadResponse.from_dict(result)
+
+    def thread_fork(self, thread_id: str, **opts: Any) -> Thread:
+        forked = self._client.thread_fork(thread_id, **opts)
+        tid = (forked.get("thread") or {}).get("id")
+        if not isinstance(tid, str) or not tid:
+            raise ValueError("thread/fork response missing thread.id")
+        return Thread(self._client, tid)
+
+    def thread_archive(self, thread_id: str) -> None:
+        self._client.thread_archive(thread_id)
+
+    def thread_unarchive(self, thread_id: str) -> Thread:
+        unarchived = self._client.thread_unarchive(thread_id)
+        tid = (unarchived.get("thread") or {}).get("id")
+        if not isinstance(tid, str) or not tid:
+            raise ValueError("thread/unarchive response missing thread.id")
+        return Thread(self._client, tid)
+
+    def thread_set_name(self, thread_id: str, name: str) -> None:
+        self._client.thread_set_name(thread_id, name)
+
+    def thread_compact(self, thread_id: str) -> ThreadCompactStartResponse:
+        result = self._client.request("thread/compact", {"threadId": thread_id})
+        if not isinstance(result, dict):
+            raise TypeError("thread/compact response must be a dict")
+        return ThreadCompactStartResponse.from_dict(result)
+
+    def turn_steer(self, thread_id: str, expected_turn_id: str, input: Input) -> TurnSteerResponse:
+        result = self._client.turn_steer(thread_id, expected_turn_id, input)
+        if not isinstance(result, dict):
+            raise TypeError("turn/steer response must be a dict")
+        return TurnSteerResponse.from_dict(result)
+
+    def turn_interrupt(self, thread_id: str, turn_id: str) -> None:
+        self._client.turn_interrupt(thread_id, turn_id)
 
     def models(self, *, include_hidden: bool = False) -> ModelListResponse:
         result = self._client.model_list(include_hidden=include_hidden)
