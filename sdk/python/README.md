@@ -24,8 +24,8 @@ print(result.items)
 print(result.error)
 print(result.usage)    # ThreadTokenUsageUpdatedNotificationPayload | None
 
-models = codex.models()
-print(models[0].id if models else None)
+models = codex.models()  # ModelListResponse
+print(models.data[0]["id"] if models.data else None)
 
 turn2 = thread.turn("Now stream this")
 for event in turn2.stream():
@@ -41,7 +41,7 @@ codex.close()
 - `Codex.close()`
 - `Codex.thread_start(model=None, **opts) -> Thread`
 - `Codex.thread(thread_id) -> Thread`
-- `Codex.models(include_hidden=False)`
+- `Codex.models(include_hidden=False) -> ModelListResponse`
 - `Thread.id`
 - `Thread.turn(input, **opts) -> Turn`
 - `Turn.stream() -> Iterator[Notification]` (all turn notifications/events)

@@ -5,7 +5,11 @@ from typing import Any, Iterator
 
 from .client import AppServerClient, AppServerConfig
 from .models import Notification
-from .generated.schema_types import TurnCompletedNotificationPayload, ThreadTokenUsageUpdatedNotificationPayload
+from .generated.schema_types import (
+    ModelListResponse,
+    TurnCompletedNotificationPayload,
+    ThreadTokenUsageUpdatedNotificationPayload,
+)
 
 
 @dataclass(slots=True)
@@ -25,12 +29,6 @@ Input = list[dict[str, Any]] | dict[str, Any] | str
 class InitializeResult:
     server_name: str | None = None
     server_version: str | None = None
-
-
-@dataclass(slots=True)
-class Model:
-    id: str
-    name: str | None = None
 
 
 class Codex:
@@ -81,23 +79,11 @@ class Codex:
     def thread(self, thread_id: str) -> Thread:
         return Thread(self._client, thread_id)
 
-    def models(self, *, include_hidden: bool = False) -> list[Model]:
+    def models(self, *, include_hidden: bool = False) -> ModelListResponse:
         result = self._client.model_list(include_hidden=include_hidden)
         if not isinstance(result, dict):
             raise TypeError("model/list response must be a dict")
-        raw_models = result.get("data")
-        if not isinstance(raw_models, list):
-            raise ValueError("model/list response missing data list")
-        out: list[Model] = []
-        for m in raw_models:
-            if not isinstance(m, dict):
-                raise TypeError("model entries must be objects")
-            model_id = m.get("id")
-            if not isinstance(model_id, str) or not model_id:
-                raise ValueError("model entry missing id")
-            name = m.get("name")
-            out.append(Model(id=model_id, name=name if isinstance(name, str) else None))
-        return out
+        return ModelListResponse.from_dict(result)
 
 
 @dataclass(slots=True)
