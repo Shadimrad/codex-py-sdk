@@ -1,4 +1,4 @@
-from codex_app_server.schema_types import (
+from codex_app_server.generated.schema_types import (
     ItemCompletedNotificationPayload,
     ItemStartedNotificationPayload,
     ThreadForkResponse,

@@ -2,6 +2,8 @@
 
 Python SDK for `codex app-server` JSON-RPC v2 over stdio.
 
+Protocol/schema generated types live under `src/codex_app_server/generated/`.
+
 ## Minimal public API
 
 ```python
