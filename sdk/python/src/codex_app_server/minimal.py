@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Iterator
+from typing import Any, Iterator, Literal, TypedDict
 
 from .client import AppServerClient, AppServerConfig
 from .models import Notification
@@ -22,7 +22,35 @@ class TurnResult:
     items: list[Any]
     usage: ThreadTokenUsageUpdatedNotificationPayload | None = None
 
-Input = list[dict[str, Any]] | dict[str, Any] | str
+class TextInput(TypedDict):
+    type: Literal["text"]
+    text: str
+
+
+class ImageInput(TypedDict):
+    type: Literal["image"]
+    url: str
+
+
+class LocalImageInput(TypedDict):
+    type: Literal["localImage"]
+    path: str
+
+
+class SkillInput(TypedDict):
+    type: Literal["skill"]
+    name: str
+    path: str
+
+
+class MentionInput(TypedDict):
+    type: Literal["mention"]
+    name: str
+    path: str
+
+
+InputItem = TextInput | ImageInput | LocalImageInput | SkillInput | MentionInput
+Input = list[InputItem] | InputItem | str
 
 
 @dataclass(slots=True)

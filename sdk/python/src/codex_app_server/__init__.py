@@ -15,7 +15,20 @@ from .errors import (
     TransportClosedError,
 )
 from .models import AskResult, Notification
-from .minimal import Codex, Thread, Turn, TurnResult, InitializeResult
+from .minimal import (
+    Codex,
+    Thread,
+    Turn,
+    TurnResult,
+    InitializeResult,
+    Input,
+    InputItem,
+    TextInput,
+    ImageInput,
+    LocalImageInput,
+    SkillInput,
+    MentionInput,
+)
 from .retry import retry_on_overload
 from .typed import (
     AgentMessageDeltaEvent,
@@ -87,6 +100,13 @@ __all__ = [
     "Turn",
     "TurnResult",
     "InitializeResult",
+    "Input",
+    "InputItem",
+    "TextInput",
+    "ImageInput",
+    "LocalImageInput",
+    "SkillInput",
+    "MentionInput",
     "AppServerConfig",
     "ThreadSession",
     "AsyncThreadSession",

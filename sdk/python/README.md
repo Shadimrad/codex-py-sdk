@@ -47,7 +47,31 @@ codex.close()
 - `Turn.stream() -> Iterator[Notification]` (all turn notifications/events)
 - `Turn.run() -> TurnResult` (`completed`, optional `usage`)
 
-`input` is unified: string, dict item, or list of items.
+`input` is unified: string, typed input item, or list of typed input items.
+
+### Input examples (text + image)
+
+```python
+# plain text
+thread.turn("Describe this image").run()
+
+# remote image
+thread.turn([
+    {"type": "text", "text": "What is in this image?"},
+    {"type": "image", "url": "https://example.com/cat.jpg"},
+]).run()
+
+# local image
+thread.turn([
+    {"type": "text", "text": "Read this screenshot"},
+    {"type": "localImage", "path": "./screenshot.png"},
+]).run()
+```
+
+## Codex vs AppServerClient
+
+- `Codex`: ergonomic public API (constructor auto-start/init, thread/turn UX types).
+- `AppServerClient`: low-level transport/RPC API (advanced/internal use).
 
 ## Install
 
