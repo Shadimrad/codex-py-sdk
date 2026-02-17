@@ -61,8 +61,9 @@ class Codex:
             server_version=server.get("version"),
         )
 
-    def init(self) -> InitializeResult:
-        """Return startup initialize metadata captured during construction."""
+    @property
+    def metadata(self) -> InitializeResult:
+        """Startup metadata captured during construction."""
         return self._init
 
     def close(self) -> None:
