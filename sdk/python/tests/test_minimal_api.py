@@ -10,6 +10,12 @@ HERE = Path(__file__).parent
 FAKE = HERE / "fake_app_server.py"
 
 
+def test_parse_initialize_without_server_info() -> None:
+    parsed = Codex._parse_initialize({"userAgent": "codex/0.1"})
+    assert parsed.server_name is None
+    assert parsed.server_version is None
+
+
 def test_minimal_turn_run_and_stream() -> None:
     codex = Codex(AppServerConfig(launch_args_override=("python3", str(FAKE))))
     assert codex.metadata.server_name == "fake"

@@ -112,12 +112,15 @@ class Codex:
         if not isinstance(payload, dict):
             raise TypeError("initialize response must be a dict")
         server = payload.get("serverInfo")
-        if not isinstance(server, dict):
-            raise ValueError("initialize response missing serverInfo")
-        return InitializeResult(
-            server_name=server.get("name"),
-            server_version=server.get("version"),
-        )
+        if isinstance(server, dict):
+            return InitializeResult(
+                server_name=server.get("name"),
+                server_version=server.get("version"),
+            )
+        # Some app-server builds may omit `serverInfo` in initialize payloads.
+        # Keep constructor fail-fast for transport/protocol errors, but allow
+        # metadata to be unknown instead of crashing on missing optional fields.
+        return InitializeResult()
 
     @property
     def metadata(self) -> InitializeResult:

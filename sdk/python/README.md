@@ -26,7 +26,9 @@ with Codex() as codex:
 - API reference (signatures + behavior): `docs/api-reference.md`
 - Reliability and production patterns: `docs/production-guide.md`
 - Common decisions and pitfalls: `docs/faq.md`
+- Implementation rationale + API walkthrough: `docs/implementation-notes.md`
 - Runnable examples index: `examples/README.md`
+- Jupyter walkthrough notebook: `notebooks/sdk_walkthrough.ipynb`
 
 ## Examples
 
