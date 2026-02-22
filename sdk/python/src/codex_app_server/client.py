@@ -91,10 +91,31 @@ _SCHEMA_NOTIFICATION_PARSERS = {
 
 
 
+def _bundled_codex_path() -> Path:
+    import platform
+
+    sys_name = platform.system().lower()
+    machine = platform.machine().lower()
+
+    if sys_name.startswith("darwin"):
+        platform_dir = "darwin-arm64" if machine in {"arm64", "aarch64"} else "darwin-x64"
+        exe = "codex"
+    elif sys_name.startswith("linux"):
+        platform_dir = "linux-arm64" if machine in {"arm64", "aarch64"} else "linux-x64"
+        exe = "codex"
+    elif sys_name.startswith("windows") or os.name == "nt":
+        platform_dir = "windows-arm64" if machine in {"arm64", "aarch64"} else "windows-x64"
+        exe = "codex.exe"
+    else:
+        raise RuntimeError(f"Unsupported OS for bundled codex binary: {sys_name}/{machine}")
+
+    return Path(__file__).resolve().parent / "bin" / platform_dir / exe
+
+
 @dataclass(slots=True)
 class AppServerConfig:
-    # Single runtime binary source for SDK stability.
-    codex_bin: str = str(Path(__file__).resolve().parents[2] / "bin" / "codex")
+    # Out-of-the-box runtime binary source (bundled by platform/arch).
+    codex_bin: str = str(_bundled_codex_path())
     launch_args_override: tuple[str, ...] | None = None
     config_overrides: tuple[str, ...] = ()
     cwd: str | None = None

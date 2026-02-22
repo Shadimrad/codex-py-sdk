@@ -37,6 +37,21 @@ def pinned_bin_path() -> Path:
     return sdk_root() / "bin" / name
 
 
+def bundled_platform_bin_path(platform_key: str) -> Path:
+    exe = "codex.exe" if platform_key.startswith("windows") else "codex"
+    return sdk_root() / "src" / "codex_app_server" / "bin" / platform_key / exe
+
+
+PLATFORMS: dict[str, tuple[list[str], list[str]]] = {
+    "darwin-arm64": (["darwin", "apple-darwin", "macos"], ["aarch64", "arm64"]),
+    "darwin-x64": (["darwin", "apple-darwin", "macos"], ["x86_64", "amd64", "x64"]),
+    "linux-arm64": (["linux", "unknown-linux", "musl", "gnu"], ["aarch64", "arm64"]),
+    "linux-x64": (["linux", "unknown-linux", "musl", "gnu"], ["x86_64", "amd64", "x64"]),
+    "windows-arm64": (["windows", "pc-windows", "win", "msvc", "gnu"], ["aarch64", "arm64"]),
+    "windows-x64": (["windows", "pc-windows", "win", "msvc", "gnu"], ["x86_64", "amd64", "x64"]),
+}
+
+
 def run(cmd: list[str], cwd: Path) -> None:
     subprocess.run(cmd, cwd=str(cwd), check=True)
 
@@ -81,7 +96,11 @@ def pick_asset(release: dict[str, Any], os_tokens: list[str], arch_tokens: list[
     scored: list[tuple[int, dict[str, Any]]] = []
     for asset in release.get("assets", []):
         name = (asset.get("name") or "").lower()
-        if "codex" not in name:
+
+        # Accept only primary codex cli artifacts.
+        if not (name.startswith("codex-") or name == "codex"):
+            continue
+        if name.startswith("codex-responses") or name.startswith("codex-command-runner") or name.startswith("codex-windows-sandbox") or name.startswith("codex-npm"):
             continue
         if not (name.endswith(".tar.gz") or name.endswith(".zip")):
             continue
@@ -91,12 +110,11 @@ def pick_asset(release: dict[str, Any], os_tokens: list[str], arch_tokens: list[
         if os_score == 0 or arch_score == 0:
             continue
 
-        # Prefer more specific OS/arch matches.
         score = os_score * 10 + arch_score
         scored.append((score, asset))
 
     if not scored:
-        raise RuntimeError("Could not find matching release asset for this platform")
+        raise RuntimeError("Could not find matching codex CLI asset for this platform")
 
     scored.sort(key=lambda x: x[0], reverse=True)
     return scored[0][1]
@@ -135,22 +153,39 @@ def extract_codex_binary(archive: Path, out_bin: Path) -> None:
             out_bin.chmod(out_bin.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
+def _download_asset_to_binary(release: dict[str, Any], os_tokens: list[str], arch_tokens: list[str], out_bin: Path) -> None:
+    asset = pick_asset(release, os_tokens, arch_tokens)
+    print(f"Asset: {asset.get('name')} -> {out_bin}")
+    with tempfile.TemporaryDirectory() as td:
+        archive = Path(td) / (asset.get("name") or "codex-release.tar.gz")
+        download(asset["browser_download_url"], archive)
+        extract_codex_binary(archive, out_bin)
+
+
 def update_binary(channel: str) -> None:
     if shutil.which("gh") is None:
         raise RuntimeError("GitHub CLI (`gh`) is required to download release binaries")
 
     release = pick_release(channel)
     os_tokens, arch_tokens = platform_tokens()
-    asset = pick_asset(release, os_tokens, arch_tokens)
     print(f"Release: {release.get('tag_name')} ({channel})")
-    print(f"Asset: {asset.get('name')}")
 
-    with tempfile.TemporaryDirectory() as td:
-        archive = Path(td) / (asset.get("name") or "codex-release.tar.gz")
-        download(asset["browser_download_url"], archive)
-        extract_codex_binary(archive, pinned_bin_path())
+    # refresh current platform in bundled runtime location
+    current_key = next((k for k, v in PLATFORMS.items() if v == (os_tokens, arch_tokens)), None)
+    out = bundled_platform_bin_path(current_key) if current_key else pinned_bin_path()
+    _download_asset_to_binary(release, os_tokens, arch_tokens, out)
+    print(f"Pinned binary updated: {out}")
 
-    print(f"Pinned binary updated: {pinned_bin_path()}")
+
+def bundle_all_platform_binaries(channel: str) -> None:
+    if shutil.which("gh") is None:
+        raise RuntimeError("GitHub CLI (`gh`) is required to download release binaries")
+
+    release = pick_release(channel)
+    print(f"Release: {release.get('tag_name')} ({channel})")
+    for platform_key, (os_tokens, arch_tokens) in PLATFORMS.items():
+        _download_asset_to_binary(release, os_tokens, arch_tokens, bundled_platform_bin_path(platform_key))
+    print("Bundled all platform binaries.")
 
 
 def generate_v2_all() -> None:
@@ -411,10 +446,18 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Single SDK maintenance entrypoint")
     parser.add_argument("--channel", choices=["stable", "alpha"], default="stable")
     parser.add_argument("--types-only", action="store_true", help="Regenerate types only (skip binary update)")
+    parser.add_argument(
+        "--bundle-all-platforms",
+        action="store_true",
+        help="Download and bundle codex binaries for all supported OS/arch targets",
+    )
     args = parser.parse_args()
 
     if not args.types_only:
-        update_binary(args.channel)
+        if args.bundle_all_platforms:
+            bundle_all_platform_binaries(args.channel)
+        else:
+            update_binary(args.channel)
     generate_types()
     print("Done.")
 

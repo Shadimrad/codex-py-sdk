@@ -38,25 +38,29 @@ python examples/01_quickstart_constructor/sync.py
 python examples/01_quickstart_constructor/async.py
 ```
 
-## Pinned release binary workflow
+## Bundled runtime binaries (out of the box)
 
-Use this script to pin the SDK to the latest release binary (stable or alpha) and regenerate types:
+The SDK ships with platform-specific bundled binaries, so end users do not need updater scripts.
+
+Runtime binary source (single source, no fallback):
+
+- `src/codex_app_server/bin/darwin-arm64/codex`
+- `src/codex_app_server/bin/darwin-x64/codex`
+- `src/codex_app_server/bin/linux-arm64/codex`
+- `src/codex_app_server/bin/linux-x64/codex`
+- `src/codex_app_server/bin/windows-arm64/codex.exe`
+- `src/codex_app_server/bin/windows-x64/codex.exe`
+
+## Maintainer workflow (refresh binaries/types)
 
 ```bash
 cd sdk/python
-python scripts/update_sdk_artifacts.py --channel stable
+python scripts/update_sdk_artifacts.py --channel stable --bundle-all-platforms
 # or
-python scripts/update_sdk_artifacts.py --channel alpha
+python scripts/update_sdk_artifacts.py --channel alpha --bundle-all-platforms
 ```
 
-What it does:
-
-- downloads latest release binary for current OS/arch into `sdk/python/bin/` (`codex` on macOS/Linux, `codex.exe` on Windows)
-- regenerates protocol-derived Python types
-
-Runtime binary:
-
-- single source: pinned `sdk/python/bin/` platform binary (`codex` or `codex.exe`) (no fallback)
+This refreshes all bundled OS/arch binaries and regenerates protocol-derived Python types.
 
 ## Compatibility and versioning
 
