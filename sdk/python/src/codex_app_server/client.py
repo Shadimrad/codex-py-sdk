@@ -55,6 +55,12 @@ from .generated.schema_types import (
     TurnSteerResponse as SchemaTurnSteerResponse,
     TurnStartedNotificationPayload as SchemaTurnStartedNotificationPayload,
 )
+from .generated.v2_all.ThreadStartParams import ThreadStartParams as V2ThreadStartParams
+from .generated.v2_all.ThreadResumeParams import ThreadResumeParams as V2ThreadResumeParams
+from .generated.v2_all.ThreadListParams import ThreadListParams as V2ThreadListParams
+from .generated.v2_all.ThreadForkParams import ThreadForkParams as V2ThreadForkParams
+from .generated.v2_all.TurnStartParams import TurnStartParams as V2TurnStartParams
+
 from .generated.protocol_types import (
     ThreadListResponse,
     ThreadReadResponse,
@@ -64,6 +70,17 @@ from .generated.protocol_types import (
 )
 
 ApprovalHandler = Callable[[str, dict[str, Any] | None], dict[str, Any]]
+
+
+def _params_dict(params: object | None) -> dict[str, Any]:
+    if params is None:
+        return {}
+    if hasattr(params, "model_dump"):
+        return params.model_dump(exclude_none=True)
+    if isinstance(params, dict):
+        return dict(params)
+    raise TypeError(f"Expected generated params model or dict, got {type(params).__name__}")
+
 
 _TYPED_NOTIFICATION_PARSERS = {
     "turn/completed": TurnCompletedEvent,
@@ -268,21 +285,21 @@ class AppServerClient:
 
     # ---------- High-level v2 API ----------
 
-    def thread_start(self, **params: Any) -> ThreadStartResponse:
-        return self.request("thread/start", params)
+    def thread_start(self, params: V2ThreadStartParams | dict[str, Any] | None = None) -> ThreadStartResponse:
+        return self.request("thread/start", _params_dict(params))
 
-    def thread_resume(self, thread_id: str, **params: Any) -> ThreadResumeResponse:
-        payload = {"threadId": thread_id, **params}
+    def thread_resume(self, thread_id: str, params: V2ThreadResumeParams | dict[str, Any] | None = None) -> ThreadResumeResponse:
+        payload = {"threadId": thread_id, **_params_dict(params)}
         return self.request("thread/resume", payload)
 
-    def thread_list(self, **params: Any) -> ThreadListResponse:
-        return self.request("thread/list", params)
+    def thread_list(self, params: V2ThreadListParams | dict[str, Any] | None = None) -> ThreadListResponse:
+        return self.request("thread/list", _params_dict(params))
 
     def thread_read(self, thread_id: str, include_turns: bool = False) -> ThreadReadResponse:
         return self.request("thread/read", {"threadId": thread_id, "includeTurns": include_turns})
 
-    def thread_fork(self, thread_id: str, **params: Any) -> dict[str, Any]:
-        return self.request("thread/fork", {"threadId": thread_id, **params})
+    def thread_fork(self, thread_id: str, params: V2ThreadForkParams | dict[str, Any] | None = None) -> dict[str, Any]:
+        return self.request("thread/fork", {"threadId": thread_id, **_params_dict(params)})
 
     def thread_archive(self, thread_id: str) -> dict[str, Any]:
         return self.request("thread/archive", {"threadId": thread_id})
@@ -297,14 +314,14 @@ class AppServerClient:
         self,
         thread_id: str,
         input_items: list[dict[str, Any]] | dict[str, Any] | str,
-        **params: Any,
+        params: V2TurnStartParams | dict[str, Any] | None = None,
     ) -> TurnStartResponse:
-        payload = {"threadId": thread_id, "input": self._normalize_input_items(input_items), **params}
+        payload = {**_params_dict(params), "threadId": thread_id, "input": self._normalize_input_items(input_items)}
         return self.request("turn/start", payload)
 
-    def turn_text(self, thread_id: str, text: str, **params: Any) -> TurnStartResponse:
+    def turn_text(self, thread_id: str, text: str, params: V2TurnStartParams | dict[str, Any] | None = None) -> TurnStartResponse:
         """Convenience helper for the common text-only turn case."""
-        return self.turn_start(thread_id, text, **params)
+        return self.turn_start(thread_id, text, params=params)
 
     def turn_interrupt(self, thread_id: str, turn_id: str) -> dict[str, Any]:
         return self.request("turn/interrupt", {"threadId": thread_id, "turnId": turn_id})
@@ -330,26 +347,26 @@ class AppServerClient:
     def thread(self, thread_id: str) -> ThreadSession:
         return ThreadSession(client=self, thread_id=thread_id)
 
-    def thread_start_session(self, *, model: str | None = None, **params: Any) -> ThreadSession:
-        payload = dict(params)
+    def thread_start_session(self, *, model: str | None = None, params: V2ThreadStartParams | dict[str, Any] | None = None) -> ThreadSession:
+        payload = _params_dict(params)
         if model is not None:
             payload["model"] = model
-        started = self.thread_start(**payload)
+        started = self.thread_start(payload)
         return ThreadSession(client=self, thread_id=started["thread"]["id"])
 
     # ---------- Typed convenience wrappers ----------
 
-    def thread_start_typed(self, **params: Any) -> ThreadStartResult:
-        return ThreadStartResult.from_dict(self.thread_start(**params))
+    def thread_start_typed(self, params: V2ThreadStartParams | dict[str, Any] | None = None) -> ThreadStartResult:
+        return ThreadStartResult.from_dict(self.thread_start(params))
 
-    def thread_resume_typed(self, thread_id: str, **params: Any) -> ThreadResumeResult:
-        return ThreadResumeResult.from_dict(self.thread_resume(thread_id, **params))
+    def thread_resume_typed(self, thread_id: str, params: V2ThreadResumeParams | dict[str, Any] | None = None) -> ThreadResumeResult:
+        return ThreadResumeResult.from_dict(self.thread_resume(thread_id, params))
 
     def thread_read_typed(self, thread_id: str, include_turns: bool = False) -> ThreadReadResult:
         return ThreadReadResult.from_dict(self.thread_read(thread_id, include_turns=include_turns))
 
-    def thread_fork_typed(self, thread_id: str, **params: Any) -> ThreadForkResult:
-        return ThreadForkResult.from_dict(self.thread_fork(thread_id, **params))
+    def thread_fork_typed(self, thread_id: str, params: V2ThreadForkParams | dict[str, Any] | None = None) -> ThreadForkResult:
+        return ThreadForkResult.from_dict(self.thread_fork(thread_id, params))
 
     def thread_archive_typed(self, thread_id: str) -> EmptyResult:
         return EmptyResult.from_dict(self.thread_archive(thread_id))
@@ -360,8 +377,8 @@ class AppServerClient:
     def thread_set_name_typed(self, thread_id: str, name: str) -> EmptyResult:
         return EmptyResult.from_dict(self.thread_set_name(thread_id, name))
 
-    def thread_list_typed(self, **params: Any) -> ThreadListResult:
-        return ThreadListResult.from_dict(self.thread_list(**params))
+    def thread_list_typed(self, params: V2ThreadListParams | dict[str, Any] | None = None) -> ThreadListResult:
+        return ThreadListResult.from_dict(self.thread_list(params))
 
     def model_list_typed(self, include_hidden: bool = False) -> ModelListResult:
         return ModelListResult.from_dict(self.model_list(include_hidden=include_hidden))
@@ -370,12 +387,12 @@ class AppServerClient:
         self,
         thread_id: str,
         input_items: list[dict[str, Any]] | dict[str, Any] | str,
-        **params: Any,
+        params: V2TurnStartParams | dict[str, Any] | None = None,
     ) -> TurnStartResult:
-        return TurnStartResult.from_dict(self.turn_start(thread_id, input_items, **params))
+        return TurnStartResult.from_dict(self.turn_start(thread_id, input_items, params=params))
 
-    def turn_text_typed(self, thread_id: str, text: str, **params: Any) -> TurnStartResult:
-        return TurnStartResult.from_dict(self.turn_text(thread_id, text, **params))
+    def turn_text_typed(self, thread_id: str, text: str, params: V2TurnStartParams | dict[str, Any] | None = None) -> TurnStartResult:
+        return TurnStartResult.from_dict(self.turn_text(thread_id, text, params=params))
 
     def turn_steer_typed(
         self,
@@ -385,20 +402,20 @@ class AppServerClient:
     ) -> TurnSteerResult:
         return TurnSteerResult.from_dict(self.turn_steer(thread_id, expected_turn_id, input_items))
 
-    def thread_start_schema(self, **params: Any) -> SchemaThreadStartResponse:
-        return SchemaThreadStartResponse.from_dict(self.thread_start(**params))
+    def thread_start_schema(self, params: V2ThreadStartParams | dict[str, Any] | None = None) -> SchemaThreadStartResponse:
+        return SchemaThreadStartResponse.from_dict(self.thread_start(params))
 
-    def thread_resume_schema(self, thread_id: str, **params: Any) -> SchemaThreadResumeResponse:
-        return SchemaThreadResumeResponse.from_dict(self.thread_resume(thread_id, **params))
+    def thread_resume_schema(self, thread_id: str, params: V2ThreadResumeParams | dict[str, Any] | None = None) -> SchemaThreadResumeResponse:
+        return SchemaThreadResumeResponse.from_dict(self.thread_resume(thread_id, params))
 
     def thread_read_schema(self, thread_id: str, include_turns: bool = False) -> SchemaThreadReadResponse:
         return SchemaThreadReadResponse.from_dict(self.thread_read(thread_id, include_turns=include_turns))
 
-    def thread_list_schema(self, **params: Any) -> SchemaThreadListResponse:
-        return SchemaThreadListResponse.from_dict(self.thread_list(**params))
+    def thread_list_schema(self, params: V2ThreadListParams | dict[str, Any] | None = None) -> SchemaThreadListResponse:
+        return SchemaThreadListResponse.from_dict(self.thread_list(params))
 
-    def thread_fork_schema(self, thread_id: str, **params: Any) -> SchemaThreadForkResponse:
-        return SchemaThreadForkResponse.from_dict(self.thread_fork(thread_id, **params))
+    def thread_fork_schema(self, thread_id: str, params: V2ThreadForkParams | dict[str, Any] | None = None) -> SchemaThreadForkResponse:
+        return SchemaThreadForkResponse.from_dict(self.thread_fork(thread_id, params))
 
     def thread_archive_schema(self, thread_id: str) -> SchemaThreadArchiveResponse:
         return SchemaThreadArchiveResponse.from_dict(self.thread_archive(thread_id))
@@ -416,12 +433,12 @@ class AppServerClient:
         self,
         thread_id: str,
         input_items: list[dict[str, Any]] | dict[str, Any] | str,
-        **params: Any,
+        params: V2TurnStartParams | dict[str, Any] | None = None,
     ) -> SchemaTurnStartResponse:
-        return SchemaTurnStartResponse.from_dict(self.turn_start(thread_id, input_items, **params))
+        return SchemaTurnStartResponse.from_dict(self.turn_start(thread_id, input_items, params=params))
 
-    def turn_text_schema(self, thread_id: str, text: str, **params: Any) -> SchemaTurnStartResponse:
-        return self.turn_start_schema(thread_id, text, **params)
+    def turn_text_schema(self, thread_id: str, text: str, params: V2TurnStartParams | dict[str, Any] | None = None) -> SchemaTurnStartResponse:
+        return self.turn_start_schema(thread_id, text, params=params)
 
     def turn_steer_schema(
         self,
@@ -495,9 +512,14 @@ class AppServerClient:
             if n.method in target_methods:
                 return out
 
-    def run_text_turn(self, thread_id: str, text: str, **params: Any) -> tuple[str, Notification]:
+    def run_text_turn(
+        self,
+        thread_id: str,
+        text: str,
+        params: V2TurnStartParams | dict[str, Any] | None = None,
+    ) -> tuple[str, Notification]:
         """Notebook-friendly helper: start a text turn and return (final_text, turn_completed_notification)."""
-        turn = self.turn_text(thread_id, text, **params)
+        turn = self.turn_text(thread_id, text, params=params)
         turn_id = turn["turn"]["id"]
 
         chunks: list[str] = []
@@ -516,7 +538,8 @@ class AppServerClient:
     def ask_result(self, text: str, *, model: str | None = None, thread_id: str | None = None) -> AskResult:
         """High-level notebook helper returning thread id, text, and completion event."""
         if thread_id is None:
-            started = self.thread_start(**({"model": model} if model else {}))
+            start_params = V2ThreadStartParams(model=model) if model else None
+            started = self.thread_start(start_params)
             thread_id = started["thread"]["id"]
         assistant_text, completed = self.run_text_turn(thread_id, text)
         return AskResult(thread_id=thread_id, text=assistant_text, completed=completed)
@@ -531,9 +554,14 @@ class AppServerClient:
         result = self.ask_result(text, model=model, thread_id=thread_id)
         return result.thread_id, result.text
 
-    def stream_text(self, thread_id: str, text: str, **params: Any) -> Iterator[str]:
+    def stream_text(
+        self,
+        thread_id: str,
+        text: str,
+        params: V2TurnStartParams | dict[str, Any] | None = None,
+    ) -> Iterator[str]:
         """Yield only assistant delta chunks for a text turn (not raw notifications)."""
-        turn = self.turn_text(thread_id, text, **params)
+        turn = self.turn_text(thread_id, text, params=params)
         turn_id = turn["turn"]["id"]
         while True:
             event = self.next_notification()
