@@ -6,6 +6,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, TypedDict
 
+
 class ThreadDict(TypedDict, total=False):
     cliVersion: str
     createdAt: int
@@ -18,6 +19,7 @@ class ThreadDict(TypedDict, total=False):
     source: Any
     turns: list[Turn]
     updatedAt: int
+
 
 @dataclass(slots=True, kw_only=True)
 class Thread:
@@ -57,6 +59,7 @@ class TurnDict(TypedDict, total=False):
     items: list[Any]
     status: str
 
+
 @dataclass(slots=True, kw_only=True)
 class Turn:
     error: Any | None = None
@@ -84,6 +87,7 @@ class ThreadStartResponseDict(TypedDict, total=False):
     sandbox: Any
     thread: Thread
 
+
 @dataclass(slots=True, kw_only=True)
 class ThreadStartResponse:
     approvalPolicy: str
@@ -102,7 +106,11 @@ class ThreadStartResponse:
             cwd=str(payload.get("cwd", None) or ""),
             model=str(payload.get("model", None) or ""),
             modelProvider=str(payload.get("modelProvider", None) or ""),
-            reasoningEffort=None if payload.get("reasoningEffort") is None else str(payload.get("reasoningEffort")),
+            reasoningEffort=(
+                None
+                if payload.get("reasoningEffort") is None
+                else str(payload.get("reasoningEffort"))
+            ),
             sandbox=payload.get("sandbox", None),
             thread=Thread.from_dict(payload.get("thread") or {}),
         )
@@ -116,6 +124,7 @@ class ThreadResumeResponseDict(TypedDict, total=False):
     reasoningEffort: str | None
     sandbox: Any
     thread: Thread
+
 
 @dataclass(slots=True, kw_only=True)
 class ThreadResumeResponse:
@@ -135,7 +144,11 @@ class ThreadResumeResponse:
             cwd=str(payload.get("cwd", None) or ""),
             model=str(payload.get("model", None) or ""),
             modelProvider=str(payload.get("modelProvider", None) or ""),
-            reasoningEffort=None if payload.get("reasoningEffort") is None else str(payload.get("reasoningEffort")),
+            reasoningEffort=(
+                None
+                if payload.get("reasoningEffort") is None
+                else str(payload.get("reasoningEffort"))
+            ),
             sandbox=payload.get("sandbox", None),
             thread=Thread.from_dict(payload.get("thread") or {}),
         )
@@ -143,6 +156,7 @@ class ThreadResumeResponse:
 
 class ThreadReadResponseDict(TypedDict, total=False):
     thread: Thread
+
 
 @dataclass(slots=True, kw_only=True)
 class ThreadReadResponse:
@@ -160,6 +174,7 @@ class ThreadListResponseDict(TypedDict, total=False):
     data: list[Thread]
     nextCursor: str | None
 
+
 @dataclass(slots=True, kw_only=True)
 class ThreadListResponse:
     data: list[Thread] = None
@@ -170,7 +185,11 @@ class ThreadListResponse:
         payload = payload or {}
         return cls(
             data=[Thread.from_dict(item or {}) for item in (payload.get("data") or [])],
-            nextCursor=None if payload.get("nextCursor") is None else str(payload.get("nextCursor")),
+            nextCursor=(
+                None
+                if payload.get("nextCursor") is None
+                else str(payload.get("nextCursor"))
+            ),
         )
 
 
@@ -182,6 +201,7 @@ class ThreadForkResponseDict(TypedDict, total=False):
     reasoningEffort: str | None
     sandbox: Any
     thread: Thread
+
 
 @dataclass(slots=True, kw_only=True)
 class ThreadForkResponse:
@@ -201,7 +221,11 @@ class ThreadForkResponse:
             cwd=str(payload.get("cwd", None) or ""),
             model=str(payload.get("model", None) or ""),
             modelProvider=str(payload.get("modelProvider", None) or ""),
-            reasoningEffort=None if payload.get("reasoningEffort") is None else str(payload.get("reasoningEffort")),
+            reasoningEffort=(
+                None
+                if payload.get("reasoningEffort") is None
+                else str(payload.get("reasoningEffort"))
+            ),
             sandbox=payload.get("sandbox", None),
             thread=Thread.from_dict(payload.get("thread") or {}),
         )
@@ -209,6 +233,7 @@ class ThreadForkResponse:
 
 class ThreadArchiveResponseDict(TypedDict, total=False):
     pass
+
 
 @dataclass(slots=True, kw_only=True)
 class ThreadArchiveResponse:
@@ -222,6 +247,7 @@ class ThreadArchiveResponse:
 
 class ThreadUnarchiveResponseDict(TypedDict, total=False):
     thread: Thread
+
 
 @dataclass(slots=True, kw_only=True)
 class ThreadUnarchiveResponse:
@@ -238,6 +264,7 @@ class ThreadUnarchiveResponse:
 class ThreadSetNameResponseDict(TypedDict, total=False):
     pass
 
+
 @dataclass(slots=True, kw_only=True)
 class ThreadSetNameResponse:
     pass
@@ -251,6 +278,7 @@ class ThreadSetNameResponse:
 class ThreadCompactStartResponseDict(TypedDict, total=False):
     pass
 
+
 @dataclass(slots=True, kw_only=True)
 class ThreadCompactStartResponse:
     pass
@@ -263,6 +291,7 @@ class ThreadCompactStartResponse:
 
 class TurnStartResponseDict(TypedDict, total=False):
     turn: Turn
+
 
 @dataclass(slots=True, kw_only=True)
 class TurnStartResponse:
@@ -278,6 +307,7 @@ class TurnStartResponse:
 
 class TurnSteerResponseDict(TypedDict, total=False):
     turnId: str
+
 
 @dataclass(slots=True, kw_only=True)
 class TurnSteerResponse:
@@ -295,6 +325,7 @@ class ModelListResponseDict(TypedDict, total=False):
     data: list[Any]
     nextCursor: str | None
 
+
 @dataclass(slots=True, kw_only=True)
 class ModelListResponse:
     data: list[Any] = None
@@ -305,12 +336,17 @@ class ModelListResponse:
         payload = payload or {}
         return cls(
             data=list(payload.get("data", []) or []),
-            nextCursor=None if payload.get("nextCursor") is None else str(payload.get("nextCursor")),
+            nextCursor=(
+                None
+                if payload.get("nextCursor") is None
+                else str(payload.get("nextCursor"))
+            ),
         )
 
 
 class ThreadStartedNotificationPayloadDict(TypedDict, total=False):
     thread: Thread
+
 
 @dataclass(slots=True, kw_only=True)
 class ThreadStartedNotificationPayload:
@@ -327,6 +363,7 @@ class ThreadStartedNotificationPayload:
 class TurnStartedNotificationPayloadDict(TypedDict, total=False):
     threadId: str
     turn: Turn
+
 
 @dataclass(slots=True, kw_only=True)
 class TurnStartedNotificationPayload:
@@ -345,6 +382,7 @@ class TurnStartedNotificationPayload:
 class TurnCompletedNotificationPayloadDict(TypedDict, total=False):
     threadId: str
     turn: Turn
+
 
 @dataclass(slots=True, kw_only=True)
 class TurnCompletedNotificationPayload:
@@ -366,6 +404,7 @@ class AgentMessageDeltaNotificationPayloadDict(TypedDict, total=False):
     threadId: str
     turnId: str
 
+
 @dataclass(slots=True, kw_only=True)
 class AgentMessageDeltaNotificationPayload:
     delta: str
@@ -374,7 +413,9 @@ class AgentMessageDeltaNotificationPayload:
     turnId: str
 
     @classmethod
-    def from_dict(cls, payload: dict[str, Any]) -> "AgentMessageDeltaNotificationPayload":
+    def from_dict(
+        cls, payload: dict[str, Any]
+    ) -> "AgentMessageDeltaNotificationPayload":
         payload = payload or {}
         return cls(
             delta=str(payload.get("delta", None) or ""),
@@ -389,6 +430,7 @@ class ErrorNotificationPayloadDict(TypedDict, total=False):
     threadId: str
     turnId: str
     willRetry: bool
+
 
 @dataclass(slots=True, kw_only=True)
 class ErrorNotificationPayload:
@@ -413,6 +455,7 @@ class ItemStartedNotificationPayloadDict(TypedDict, total=False):
     threadId: str
     turnId: str
 
+
 @dataclass(slots=True, kw_only=True)
 class ItemStartedNotificationPayload:
     item: Any
@@ -434,6 +477,7 @@ class ItemCompletedNotificationPayloadDict(TypedDict, total=False):
     threadId: str
     turnId: str
 
+
 @dataclass(slots=True, kw_only=True)
 class ItemCompletedNotificationPayload:
     item: Any
@@ -454,17 +498,24 @@ class ThreadNameUpdatedNotificationPayloadDict(TypedDict, total=False):
     threadId: str
     threadName: str | None
 
+
 @dataclass(slots=True, kw_only=True)
 class ThreadNameUpdatedNotificationPayload:
     threadId: str
     threadName: str | None = None
 
     @classmethod
-    def from_dict(cls, payload: dict[str, Any]) -> "ThreadNameUpdatedNotificationPayload":
+    def from_dict(
+        cls, payload: dict[str, Any]
+    ) -> "ThreadNameUpdatedNotificationPayload":
         payload = payload or {}
         return cls(
             threadId=str(payload.get("threadId", None) or ""),
-            threadName=None if payload.get("threadName") is None else str(payload.get("threadName")),
+            threadName=(
+                None
+                if payload.get("threadName") is None
+                else str(payload.get("threadName"))
+            ),
         )
 
 
@@ -473,6 +524,7 @@ class ThreadTokenUsageUpdatedNotificationPayloadDict(TypedDict, total=False):
     tokenUsage: Any
     turnId: str
 
+
 @dataclass(slots=True, kw_only=True)
 class ThreadTokenUsageUpdatedNotificationPayload:
     threadId: str
@@ -480,7 +532,9 @@ class ThreadTokenUsageUpdatedNotificationPayload:
     turnId: str
 
     @classmethod
-    def from_dict(cls, payload: dict[str, Any]) -> "ThreadTokenUsageUpdatedNotificationPayload":
+    def from_dict(
+        cls, payload: dict[str, Any]
+    ) -> "ThreadTokenUsageUpdatedNotificationPayload":
         payload = payload or {}
         return cls(
             threadId=str(payload.get("threadId", None) or ""),

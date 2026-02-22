@@ -4,10 +4,12 @@ from .v2_all.ModelListResponse import ModelListResponse
 from .v2_all.ThreadCompactStartResponse import ThreadCompactStartResponse
 from .v2_all.ThreadListResponse import ThreadListResponse
 from .v2_all.ThreadReadResponse import ThreadReadResponse
-from .v2_all.ThreadTokenUsageUpdatedNotification import ThreadTokenUsageUpdatedNotification
+from .v2_all.ThreadTokenUsageUpdatedNotification import (
+    ThreadTokenUsageUpdatedNotification,
+)
+from .v2_all.TurnCompletedNotification import ThreadItem153 as ThreadItem
 from .v2_all.TurnCompletedNotification import (
     TurnCompletedNotification as TurnCompletedNotificationPayload,
-    ThreadItem153 as ThreadItem,
 )
 from .v2_all.TurnSteerResponse import TurnSteerResponse
 

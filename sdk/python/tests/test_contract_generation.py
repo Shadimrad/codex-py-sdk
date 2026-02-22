@@ -5,7 +5,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -42,4 +41,6 @@ def test_generated_files_are_up_to_date():
         text=True,
         check=False,
     )
-    assert diff.returncode == 0, f"Generated files drifted:\n{diff.stdout}\n{diff.stderr}"
+    assert (
+        diff.returncode == 0
+    ), f"Generated files drifted:\n{diff.stdout}\n{diff.stderr}"

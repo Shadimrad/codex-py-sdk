@@ -727,7 +727,12 @@ def _replace_generated_block(source: str, block_name: str, body: str) -> str:
     return updated
 
 
-def _render_codex_block(thread_start_fields: list[PublicFieldSpec], thread_list_fields: list[PublicFieldSpec]) -> str:
+def _render_codex_block(
+    thread_start_fields: list[PublicFieldSpec],
+    thread_list_fields: list[PublicFieldSpec],
+    resume_fields: list[PublicFieldSpec],
+    fork_fields: list[PublicFieldSpec],
+) -> str:
     lines = [
         "    def thread_start(",
         "        self,",
@@ -749,11 +754,49 @@ def _render_codex_block(thread_start_fields: list[PublicFieldSpec], thread_list_
         *_model_arg_lines(thread_list_fields),
         "        )",
         "        return self._client.thread_list(params)",
+        "",
+        "    def thread_resume(",
+        "        self,",
+        "        thread_id: str,",
+        "        *,",
+        *_kw_signature_lines(resume_fields),
+        "    ) -> Thread:",
+        "        params = ThreadResumeParams(",
+        "            threadId=thread_id,",
+        *_model_arg_lines(resume_fields),
+        "        )",
+        "        resumed = self._client.thread_resume(thread_id, params)",
+        "        return Thread(self._client, resumed.thread.id)",
+        "",
+        "    def thread_fork(",
+        "        self,",
+        "        thread_id: str,",
+        "        *,",
+        *_kw_signature_lines(fork_fields),
+        "    ) -> Thread:",
+        "        params = ThreadForkParams(",
+        "            threadId=thread_id,",
+        *_model_arg_lines(fork_fields),
+        "        )",
+        "        forked = self._client.thread_fork(thread_id, params)",
+        "        return Thread(self._client, forked.thread.id)",
+        "",
+        "    def thread_archive(self, thread_id: str) -> ThreadArchiveResponse:",
+        "        return self._client.thread_archive(thread_id)",
+        "",
+        "    def thread_unarchive(self, thread_id: str) -> Thread:",
+        "        unarchived = self._client.thread_unarchive(thread_id)",
+        "        return Thread(self._client, unarchived.thread.id)",
     ]
     return "\n".join(lines)
 
 
-def _render_async_codex_block(thread_start_fields: list[PublicFieldSpec], thread_list_fields: list[PublicFieldSpec]) -> str:
+def _render_async_codex_block(
+    thread_start_fields: list[PublicFieldSpec],
+    thread_list_fields: list[PublicFieldSpec],
+    resume_fields: list[PublicFieldSpec],
+    fork_fields: list[PublicFieldSpec],
+) -> str:
     lines = [
         "    async def thread_start(",
         "        self,",
@@ -777,14 +820,49 @@ def _render_async_codex_block(thread_start_fields: list[PublicFieldSpec], thread
         *_model_arg_lines(thread_list_fields),
         "        )",
         "        return await self._client.thread_list(params)",
+        "",
+        "    async def thread_resume(",
+        "        self,",
+        "        thread_id: str,",
+        "        *,",
+        *_kw_signature_lines(resume_fields),
+        "    ) -> AsyncThread:",
+        "        await self._ensure_initialized()",
+        "        params = ThreadResumeParams(",
+        "            threadId=thread_id,",
+        *_model_arg_lines(resume_fields),
+        "        )",
+        "        resumed = await self._client.thread_resume(thread_id, params)",
+        "        return AsyncThread(self, resumed.thread.id)",
+        "",
+        "    async def thread_fork(",
+        "        self,",
+        "        thread_id: str,",
+        "        *,",
+        *_kw_signature_lines(fork_fields),
+        "    ) -> AsyncThread:",
+        "        await self._ensure_initialized()",
+        "        params = ThreadForkParams(",
+        "            threadId=thread_id,",
+        *_model_arg_lines(fork_fields),
+        "        )",
+        "        forked = await self._client.thread_fork(thread_id, params)",
+        "        return AsyncThread(self, forked.thread.id)",
+        "",
+        "    async def thread_archive(self, thread_id: str) -> ThreadArchiveResponse:",
+        "        await self._ensure_initialized()",
+        "        return await self._client.thread_archive(thread_id)",
+        "",
+        "    async def thread_unarchive(self, thread_id: str) -> AsyncThread:",
+        "        await self._ensure_initialized()",
+        "        unarchived = await self._client.thread_unarchive(thread_id)",
+        "        return AsyncThread(self, unarchived.thread.id)",
     ]
     return "\n".join(lines)
 
 
 def _render_thread_block(
     turn_fields: list[PublicFieldSpec],
-    resume_fields: list[PublicFieldSpec],
-    fork_fields: list[PublicFieldSpec],
 ) -> str:
     lines = [
         "    def turn(",
@@ -801,38 +879,12 @@ def _render_thread_block(
         "        )",
         "        turn = self._client.turn_start(self.id, wire_input, params=params)",
         "        return Turn(self._client, self.id, turn.turn.id)",
-        "",
-        "    def resume(",
-        "        self,",
-        "        *,",
-        *_kw_signature_lines(resume_fields),
-        "    ) -> Thread:",
-        "        params = ThreadResumeParams(",
-        "            threadId=self.id,",
-        *_model_arg_lines(resume_fields),
-        "        )",
-        "        resumed = self._client.thread_resume(self.id, params)",
-        "        return Thread(self._client, resumed.thread.id)",
-        "",
-        "    def fork(",
-        "        self,",
-        "        *,",
-        *_kw_signature_lines(fork_fields),
-        "    ) -> Thread:",
-        "        params = ThreadForkParams(",
-        "            threadId=self.id,",
-        *_model_arg_lines(fork_fields),
-        "        )",
-        "        forked = self._client.thread_fork(self.id, params)",
-        "        return Thread(self._client, forked.thread.id)",
     ]
     return "\n".join(lines)
 
 
 def _render_async_thread_block(
     turn_fields: list[PublicFieldSpec],
-    resume_fields: list[PublicFieldSpec],
-    fork_fields: list[PublicFieldSpec],
 ) -> str:
     lines = [
         "    async def turn(",
@@ -854,32 +906,6 @@ def _render_async_thread_block(
         "            params=params,",
         "        )",
         "        return AsyncTurn(self._codex, self.id, turn.turn.id)",
-        "",
-        "    async def resume(",
-        "        self,",
-        "        *,",
-        *_kw_signature_lines(resume_fields),
-        "    ) -> AsyncThread:",
-        "        await self._codex._ensure_initialized()",
-        "        params = ThreadResumeParams(",
-        "            threadId=self.id,",
-        *_model_arg_lines(resume_fields),
-        "        )",
-        "        resumed = await self._codex._client.thread_resume(self.id, params)",
-        "        return AsyncThread(self._codex, resumed.thread.id)",
-        "",
-        "    async def fork(",
-        "        self,",
-        "        *,",
-        *_kw_signature_lines(fork_fields),
-        "    ) -> AsyncThread:",
-        "        await self._codex._ensure_initialized()",
-        "        params = ThreadForkParams(",
-        "            threadId=self.id,",
-        *_model_arg_lines(fork_fields),
-        "        )",
-        "        forked = await self._codex._client.thread_fork(self.id, params)",
-        "        return AsyncThread(self._codex, forked.thread.id)",
     ]
     return "\n".join(lines)
 
@@ -890,7 +916,6 @@ def generate_public_api_flat_methods() -> None:
     if not public_api_path.exists():
         # PR2 can run codegen before the ergonomic public API layer is added.
         return
-
     src_dir_str = str(src_dir)
     if src_dir_str not in sys.path:
         sys.path.insert(0, src_dir_str)
@@ -923,26 +948,32 @@ def generate_public_api_flat_methods() -> None:
     source = _replace_generated_block(
         source,
         "Codex.flat_methods",
-        _render_codex_block(thread_start_fields, thread_list_fields),
+        _render_codex_block(
+            thread_start_fields,
+            thread_list_fields,
+            thread_resume_fields,
+            thread_fork_fields,
+        ),
     )
     source = _replace_generated_block(
         source,
         "AsyncCodex.flat_methods",
-        _render_async_codex_block(thread_start_fields, thread_list_fields),
+        _render_async_codex_block(
+            thread_start_fields,
+            thread_list_fields,
+            thread_resume_fields,
+            thread_fork_fields,
+        ),
     )
     source = _replace_generated_block(
         source,
         "Thread.flat_methods",
-        _render_thread_block(turn_start_fields, thread_resume_fields, thread_fork_fields),
+        _render_thread_block(turn_start_fields),
     )
     source = _replace_generated_block(
         source,
         "AsyncThread.flat_methods",
-        _render_async_thread_block(
-            turn_start_fields,
-            thread_resume_fields,
-            thread_fork_fields,
-        ),
+        _render_async_thread_block(turn_start_fields),
     )
     public_api_path.write_text(source)
 
