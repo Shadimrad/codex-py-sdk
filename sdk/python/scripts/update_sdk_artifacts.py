@@ -214,7 +214,17 @@ def generate_v2_all() -> None:
         ],
         cwd=sdk_root(),
     )
+    _normalize_generated_timestamps(out_dir)
     (out_dir / "__init__.py").touch()
+
+
+def _normalize_generated_timestamps(root: Path) -> None:
+    timestamp_re = re.compile(r"^#\s+timestamp:\s+.+$", flags=re.MULTILINE)
+    for py_file in root.rglob("*.py"):
+        content = py_file.read_text()
+        normalized = timestamp_re.sub("#   timestamp: <normalized>", content)
+        if normalized != content:
+            py_file.write_text(normalized)
 
 
 # ---- protocol_types.py generation ----
@@ -460,10 +470,17 @@ TYPE_ALIAS_MAP: dict[tuple[str, str], str] = {
     ("codex_app_server.generated.v2_all.TurnStartParams", "ReasoningSummary"): "TurnReasoningSummary",
 }
 
+FIELD_ANNOTATION_OVERRIDES: dict[str, str] = {
+    # Keep public API typed without falling back to `Any`.
+    "config": "JsonObject",
+    "outputSchema": "JsonObject",
+}
+
 
 @dataclass(slots=True)
 class PublicFieldSpec:
-    name: str
+    wire_name: str
+    py_name: str
     annotation: str
     required: bool
 
@@ -501,6 +518,11 @@ def _annotation_to_source(annotation: Any) -> str:
     return "Any"
 
 
+def _camel_to_snake(name: str) -> str:
+    head = re.sub(r"(.)([A-Z][a-z]+)", r"\1_\2", name)
+    return re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", head).lower()
+
+
 def _load_public_fields(module_name: str, class_name: str, *, exclude: set[str] | None = None) -> list[PublicFieldSpec]:
     exclude = exclude or set()
     module = importlib.import_module(module_name)
@@ -509,11 +531,17 @@ def _load_public_fields(module_name: str, class_name: str, *, exclude: set[str] 
     for name, field in model.model_fields.items():
         if name in exclude:
             continue
+        required = field.is_required()
+        annotation = _annotation_to_source(field.annotation)
+        override = FIELD_ANNOTATION_OVERRIDES.get(name)
+        if override is not None:
+            annotation = override if required else f"{override} | None"
         fields.append(
             PublicFieldSpec(
-                name=name,
-                annotation=_annotation_to_source(field.annotation),
-                required=field.is_required(),
+                wire_name=name,
+                py_name=_camel_to_snake(name),
+                annotation=annotation,
+                required=required,
             )
         )
     return fields
@@ -523,12 +551,12 @@ def _kw_signature_lines(fields: list[PublicFieldSpec]) -> list[str]:
     lines: list[str] = []
     for field in fields:
         default = "" if field.required else " = None"
-        lines.append(f"        {field.name}: {field.annotation}{default},")
+        lines.append(f"        {field.py_name}: {field.annotation}{default},")
     return lines
 
 
 def _model_arg_lines(fields: list[PublicFieldSpec], *, indent: str = "            ") -> list[str]:
-    return [f"{indent}{field.name}={field.name}," for field in fields]
+    return [f"{indent}{field.wire_name}={field.py_name}," for field in fields]
 
 
 def _replace_generated_block(source: str, block_name: str, body: str) -> str:

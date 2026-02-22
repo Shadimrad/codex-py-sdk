@@ -16,10 +16,13 @@ def test_generated_files_are_up_to_date():
         [
             "git",
             "diff",
+            "--exit-code",
+            r"-I^#   timestamp:",
             "--",
             "src/codex_app_server/generated/schema_types.py",
             "src/codex_app_server/generated/protocol_types.py",
             "src/codex_app_server/generated/v2_all",
+            "src/codex_app_server/public_api.py",
         ],
         cwd=ROOT,
         capture_output=True,
