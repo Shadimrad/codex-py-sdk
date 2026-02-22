@@ -32,6 +32,7 @@ def test_generated_files_are_up_to_date():
             "--",
             "src/codex_app_server/generated/schema_types.py",
             "src/codex_app_server/generated/protocol_types.py",
+            "src/codex_app_server/generated/codex_event_types.py",
             "src/codex_app_server/generated/notification_registry.py",
             "src/codex_app_server/generated/v2_all",
             "src/codex_app_server/public_api.py",
