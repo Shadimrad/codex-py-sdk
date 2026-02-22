@@ -2,18 +2,23 @@
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 import platform
+import re
 import shutil
 import stat
 import subprocess
+import sys
 import tarfile
 import tempfile
+import types
+import typing
 import urllib.request
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, get_args, get_origin
 
 
 def repo_root() -> Path:
@@ -437,9 +442,332 @@ def generate_schema_types() -> None:
     out.write_text("\n".join(parts) + "\n")
 
 
+TYPE_ALIAS_MAP: dict[tuple[str, str], str] = {
+    ("codex_app_server.generated.v2_all.ThreadStartParams", "AskForApproval"): "AskForApproval",
+    ("codex_app_server.generated.v2_all.ThreadStartParams", "Personality"): "Personality",
+    ("codex_app_server.generated.v2_all.ThreadStartParams", "SandboxMode"): "SandboxMode",
+    ("codex_app_server.generated.v2_all.ThreadListParams", "ThreadSortKey"): "ThreadSortKey",
+    ("codex_app_server.generated.v2_all.ThreadListParams", "ThreadSourceKind"): "ThreadSourceKind",
+    ("codex_app_server.generated.v2_all.ThreadResumeParams", "AskForApproval"): "ResumeAskForApproval",
+    ("codex_app_server.generated.v2_all.ThreadResumeParams", "Personality"): "ResumePersonality",
+    ("codex_app_server.generated.v2_all.ThreadResumeParams", "SandboxMode"): "ResumeSandboxMode",
+    ("codex_app_server.generated.v2_all.ThreadForkParams", "AskForApproval"): "ForkAskForApproval",
+    ("codex_app_server.generated.v2_all.ThreadForkParams", "SandboxMode"): "ForkSandboxMode",
+    ("codex_app_server.generated.v2_all.TurnStartParams", "AskForApproval"): "TurnAskForApproval",
+    ("codex_app_server.generated.v2_all.TurnStartParams", "Personality"): "TurnPersonality",
+    ("codex_app_server.generated.v2_all.TurnStartParams", "ReasoningEffort"): "TurnReasoningEffort",
+    ("codex_app_server.generated.v2_all.TurnStartParams", "SandboxPolicy"): "TurnSandboxPolicy",
+    ("codex_app_server.generated.v2_all.TurnStartParams", "ReasoningSummary"): "TurnReasoningSummary",
+}
+
+
+@dataclass(slots=True)
+class PublicFieldSpec:
+    name: str
+    annotation: str
+    required: bool
+
+
+def _annotation_to_source(annotation: Any) -> str:
+    origin = get_origin(annotation)
+    if origin is typing.Annotated:
+        return _annotation_to_source(get_args(annotation)[0])
+    if origin in (typing.Union, types.UnionType):
+        parts: list[str] = []
+        for arg in get_args(annotation):
+            rendered = _annotation_to_source(arg)
+            if rendered not in parts:
+                parts.append(rendered)
+        return " | ".join(parts)
+    if origin is list:
+        args = get_args(annotation)
+        item = _annotation_to_source(args[0]) if args else "Any"
+        return f"list[{item}]"
+    if origin is dict:
+        args = get_args(annotation)
+        key = _annotation_to_source(args[0]) if args else "str"
+        val = _annotation_to_source(args[1]) if len(args) > 1 else "Any"
+        return f"dict[{key}, {val}]"
+    if annotation is Any or annotation is typing.Any:
+        return "Any"
+    if annotation is None or annotation is type(None):
+        return "None"
+    if isinstance(annotation, type):
+        if annotation.__module__ == "builtins":
+            return annotation.__name__
+        alias = TYPE_ALIAS_MAP.get((annotation.__module__, annotation.__name__))
+        if alias is not None:
+            return alias
+    return "Any"
+
+
+def _load_public_fields(module_name: str, class_name: str, *, exclude: set[str] | None = None) -> list[PublicFieldSpec]:
+    exclude = exclude or set()
+    module = importlib.import_module(module_name)
+    model = getattr(module, class_name)
+    fields: list[PublicFieldSpec] = []
+    for name, field in model.model_fields.items():
+        if name in exclude:
+            continue
+        fields.append(
+            PublicFieldSpec(
+                name=name,
+                annotation=_annotation_to_source(field.annotation),
+                required=field.is_required(),
+            )
+        )
+    return fields
+
+
+def _kw_signature_lines(fields: list[PublicFieldSpec]) -> list[str]:
+    lines: list[str] = []
+    for field in fields:
+        default = "" if field.required else " = None"
+        lines.append(f"        {field.name}: {field.annotation}{default},")
+    return lines
+
+
+def _model_arg_lines(fields: list[PublicFieldSpec], *, indent: str = "            ") -> list[str]:
+    return [f"{indent}{field.name}={field.name}," for field in fields]
+
+
+def _replace_generated_block(source: str, block_name: str, body: str) -> str:
+    start_tag = f"    # BEGIN GENERATED: {block_name}"
+    end_tag = f"    # END GENERATED: {block_name}"
+    pattern = re.compile(
+        rf"(?s){re.escape(start_tag)}\n.*?\n{re.escape(end_tag)}"
+    )
+    replacement = f"{start_tag}\n{body.rstrip()}\n{end_tag}"
+    updated, count = pattern.subn(replacement, source, count=1)
+    if count != 1:
+        raise RuntimeError(f"Could not update generated block: {block_name}")
+    return updated
+
+
+def _render_codex_block(thread_start_fields: list[PublicFieldSpec], thread_list_fields: list[PublicFieldSpec]) -> str:
+    lines = [
+        "    def thread_start(",
+        "        self,",
+        "        *,",
+        *_kw_signature_lines(thread_start_fields),
+        "    ) -> Thread:",
+        "        params = ThreadStartParams(",
+        *_model_arg_lines(thread_start_fields),
+        "        )",
+        "        started = self._client.thread_start(params)",
+        "        return Thread(self._client, started.thread.id)",
+        "",
+        "    def thread_list(",
+        "        self,",
+        "        *,",
+        *_kw_signature_lines(thread_list_fields),
+        "    ) -> ThreadListResponse:",
+        "        params = ThreadListParams(",
+        *_model_arg_lines(thread_list_fields),
+        "        )",
+        "        return self._client.thread_list(params)",
+    ]
+    return "\n".join(lines)
+
+
+def _render_async_codex_block(thread_start_fields: list[PublicFieldSpec], thread_list_fields: list[PublicFieldSpec]) -> str:
+    lines = [
+        "    async def thread_start(",
+        "        self,",
+        "        *,",
+        *_kw_signature_lines(thread_start_fields),
+        "    ) -> AsyncThread:",
+        "        await self._ensure_initialized()",
+        "        params = ThreadStartParams(",
+        *_model_arg_lines(thread_start_fields),
+        "        )",
+        "        started = await self._client.thread_start(params)",
+        "        return AsyncThread(self, started.thread.id)",
+        "",
+        "    async def thread_list(",
+        "        self,",
+        "        *,",
+        *_kw_signature_lines(thread_list_fields),
+        "    ) -> ThreadListResponse:",
+        "        await self._ensure_initialized()",
+        "        params = ThreadListParams(",
+        *_model_arg_lines(thread_list_fields),
+        "        )",
+        "        return await self._client.thread_list(params)",
+    ]
+    return "\n".join(lines)
+
+
+def _render_thread_block(
+    turn_fields: list[PublicFieldSpec],
+    resume_fields: list[PublicFieldSpec],
+    fork_fields: list[PublicFieldSpec],
+) -> str:
+    lines = [
+        "    def turn(",
+        "        self,",
+        "        input: Input,",
+        "        *,",
+        *_kw_signature_lines(turn_fields),
+        "    ) -> Turn:",
+        "        wire_input = _to_wire_input(input)",
+        "        params = TurnStartParams(",
+        "            threadId=self.id,",
+        "            input=wire_input,",
+        *_model_arg_lines(turn_fields),
+        "        )",
+        "        turn = self._client.turn_start(self.id, wire_input, params=params)",
+        "        return Turn(self._client, self.id, turn.turn.id)",
+        "",
+        "    def resume(",
+        "        self,",
+        "        *,",
+        *_kw_signature_lines(resume_fields),
+        "    ) -> Thread:",
+        "        params = ThreadResumeParams(",
+        "            threadId=self.id,",
+        *_model_arg_lines(resume_fields),
+        "        )",
+        "        resumed = self._client.thread_resume(self.id, params)",
+        "        return Thread(self._client, resumed.thread.id)",
+        "",
+        "    def fork(",
+        "        self,",
+        "        *,",
+        *_kw_signature_lines(fork_fields),
+        "    ) -> Thread:",
+        "        params = ThreadForkParams(",
+        "            threadId=self.id,",
+        *_model_arg_lines(fork_fields),
+        "        )",
+        "        forked = self._client.thread_fork(self.id, params)",
+        "        return Thread(self._client, forked.thread.id)",
+    ]
+    return "\n".join(lines)
+
+
+def _render_async_thread_block(
+    turn_fields: list[PublicFieldSpec],
+    resume_fields: list[PublicFieldSpec],
+    fork_fields: list[PublicFieldSpec],
+) -> str:
+    lines = [
+        "    async def turn(",
+        "        self,",
+        "        input: Input,",
+        "        *,",
+        *_kw_signature_lines(turn_fields),
+        "    ) -> AsyncTurn:",
+        "        await self._codex._ensure_initialized()",
+        "        wire_input = _to_wire_input(input)",
+        "        params = TurnStartParams(",
+        "            threadId=self.id,",
+        "            input=wire_input,",
+        *_model_arg_lines(turn_fields),
+        "        )",
+        "        turn = await self._codex._client.turn_start(",
+        "            self.id,",
+        "            wire_input,",
+        "            params=params,",
+        "        )",
+        "        return AsyncTurn(self._codex, self.id, turn.turn.id)",
+        "",
+        "    async def resume(",
+        "        self,",
+        "        *,",
+        *_kw_signature_lines(resume_fields),
+        "    ) -> AsyncThread:",
+        "        await self._codex._ensure_initialized()",
+        "        params = ThreadResumeParams(",
+        "            threadId=self.id,",
+        *_model_arg_lines(resume_fields),
+        "        )",
+        "        resumed = await self._codex._client.thread_resume(self.id, params)",
+        "        return AsyncThread(self._codex, resumed.thread.id)",
+        "",
+        "    async def fork(",
+        "        self,",
+        "        *,",
+        *_kw_signature_lines(fork_fields),
+        "    ) -> AsyncThread:",
+        "        await self._codex._ensure_initialized()",
+        "        params = ThreadForkParams(",
+        "            threadId=self.id,",
+        *_model_arg_lines(fork_fields),
+        "        )",
+        "        forked = await self._codex._client.thread_fork(self.id, params)",
+        "        return AsyncThread(self._codex, forked.thread.id)",
+    ]
+    return "\n".join(lines)
+
+
+def generate_public_api_flat_methods() -> None:
+    src_dir = sdk_root() / "src"
+    public_api_path = src_dir / "codex_app_server" / "public_api.py"
+    if not public_api_path.exists():
+        # PR2 can run codegen before the ergonomic public API layer is added.
+        return
+
+    src_dir_str = str(src_dir)
+    if src_dir_str not in sys.path:
+        sys.path.insert(0, src_dir_str)
+
+    thread_start_fields = _load_public_fields(
+        "codex_app_server.generated.v2_all.ThreadStartParams",
+        "ThreadStartParams",
+    )
+    thread_list_fields = _load_public_fields(
+        "codex_app_server.generated.v2_all.ThreadListParams",
+        "ThreadListParams",
+    )
+    thread_resume_fields = _load_public_fields(
+        "codex_app_server.generated.v2_all.ThreadResumeParams",
+        "ThreadResumeParams",
+        exclude={"threadId"},
+    )
+    thread_fork_fields = _load_public_fields(
+        "codex_app_server.generated.v2_all.ThreadForkParams",
+        "ThreadForkParams",
+        exclude={"threadId"},
+    )
+    turn_start_fields = _load_public_fields(
+        "codex_app_server.generated.v2_all.TurnStartParams",
+        "TurnStartParams",
+        exclude={"threadId", "input"},
+    )
+
+    source = public_api_path.read_text()
+    source = _replace_generated_block(
+        source,
+        "Codex.flat_methods",
+        _render_codex_block(thread_start_fields, thread_list_fields),
+    )
+    source = _replace_generated_block(
+        source,
+        "AsyncCodex.flat_methods",
+        _render_async_codex_block(thread_start_fields, thread_list_fields),
+    )
+    source = _replace_generated_block(
+        source,
+        "Thread.flat_methods",
+        _render_thread_block(turn_start_fields, thread_resume_fields, thread_fork_fields),
+    )
+    source = _replace_generated_block(
+        source,
+        "AsyncThread.flat_methods",
+        _render_async_thread_block(
+            turn_start_fields,
+            thread_resume_fields,
+            thread_fork_fields,
+        ),
+    )
+    public_api_path.write_text(source)
+
+
 def generate_types() -> None:
     # v2_all is the authoritative generated surface.
     generate_v2_all()
+    generate_public_api_flat_methods()
 
 
 def main() -> None:
