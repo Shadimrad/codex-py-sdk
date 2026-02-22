@@ -200,9 +200,7 @@ def generate_v2_all() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     run(
         [
-            sys.executable,
-            "-m",
-            "datamodel_code_generator",
+            "datamodel-codegen",
             "--input",
             str(schema_dir()),
             "--input-file-type",
@@ -213,6 +211,7 @@ def generate_v2_all() -> None:
             "pydantic_v2.BaseModel",
             "--target-python-version",
             "3.10",
+            "--use-double-quotes",
         ],
         cwd=sdk_root(),
     )
