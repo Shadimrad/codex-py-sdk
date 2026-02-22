@@ -44,9 +44,9 @@ Use this script to pin the SDK to the latest release binary (stable or alpha) an
 
 ```bash
 cd sdk/python
-python scripts/update_codex_binary_and_types.py --channel stable
+python scripts/update_sdk_artifacts.py --channel stable
 # or
-python scripts/update_codex_binary_and_types.py --channel alpha
+python scripts/update_sdk_artifacts.py --channel alpha
 ```
 
 What it does:
@@ -54,11 +54,9 @@ What it does:
 - downloads latest release `codex` binary for current OS/arch into `sdk/python/bin/codex`
 - regenerates protocol-derived Python types
 
-Runtime binary precedence:
+Runtime binary:
 
-1. `CODEX_APP_SERVER_BIN` env var (if set)
-2. pinned `sdk/python/bin/codex` (if present)
-3. `codex` from `PATH`
+- single source: pinned `sdk/python/bin/codex` (no fallback)
 
 ## Compatibility and versioning
 

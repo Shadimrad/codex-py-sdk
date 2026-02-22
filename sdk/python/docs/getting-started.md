@@ -14,11 +14,7 @@ python -m pip install -e .
 Requirements:
 
 - Python `>=3.10`
-- runtime binary available via one of:
-  - `CODEX_APP_SERVER_BIN`
-  - pinned `sdk/python/bin/codex`
-  - `codex` on `PATH`
-  (or pass custom binary path via `AppServerConfig`)
+- pinned runtime binary at `sdk/python/bin/codex`
 - Local Codex auth/session configured
 
 ## 2) Run your first turn

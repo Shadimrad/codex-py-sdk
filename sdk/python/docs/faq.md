@@ -33,7 +33,7 @@ Use `thread(...)` for simple continuation. Use `thread_resume(...)` when you nee
 
 Common causes:
 
-- no runtime binary available (`CODEX_APP_SERVER_BIN`, pinned `sdk/python/bin/codex`, or `codex` on `PATH`)
+- pinned runtime binary missing at `sdk/python/bin/codex`
 - local auth/session is missing
 - incompatible/old app-server
 
@@ -41,7 +41,7 @@ Tip: pin a release binary with:
 
 ```bash
 cd sdk/python
-python scripts/update_codex_binary_and_types.py --channel stable
+python scripts/update_sdk_artifacts.py --channel stable
 ```
 
 ## Why does a turn "hang"?

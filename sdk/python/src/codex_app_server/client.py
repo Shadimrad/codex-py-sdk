@@ -6,7 +6,7 @@ import subprocess
 import threading
 import uuid
 from collections import deque
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator
 
@@ -90,23 +90,11 @@ _SCHEMA_NOTIFICATION_PARSERS = {
 }
 
 
-def _default_codex_bin() -> str:
-    env_bin = os.getenv("CODEX_APP_SERVER_BIN")
-    if env_bin:
-        return env_bin
-
-    # Prefer a repo-managed pinned release binary when available:
-    # sdk/python/bin/codex
-    bundled = Path(__file__).resolve().parents[2] / "bin" / "codex"
-    if bundled.exists() and bundled.is_file():
-        return str(bundled)
-
-    return "codex"
-
 
 @dataclass(slots=True)
 class AppServerConfig:
-    codex_bin: str = field(default_factory=_default_codex_bin)
+    # Single runtime binary source for SDK stability.
+    codex_bin: str = str(Path(__file__).resolve().parents[2] / "bin" / "codex")
     launch_args_override: tuple[str, ...] | None = None
     config_overrides: tuple[str, ...] = ()
     cwd: str | None = None
@@ -147,7 +135,12 @@ class AppServerClient:
         if self.config.launch_args_override is not None:
             args = list(self.config.launch_args_override)
         else:
-            args = [self.config.codex_bin]
+            codex_bin = Path(self.config.codex_bin)
+            if not codex_bin.exists():
+                raise FileNotFoundError(
+                    f"Pinned codex binary not found at {codex_bin}. Run `python scripts/update_sdk_artifacts.py --channel stable` from sdk/python."
+                )
+            args = [str(codex_bin)]
             for kv in self.config.config_overrides:
                 args.extend(["--config", kv])
             args.extend(["app-server", "--listen", "stdio://"])

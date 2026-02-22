@@ -8,10 +8,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_generated_files_are_up_to_date():
-    # Regenerate contract artifacts.
-    subprocess.run(["python3", "scripts/generate_types_from_schema.py"], cwd=ROOT, check=True)
-    subprocess.run(["python3", "scripts/generate_protocol_typed_dicts.py"], cwd=ROOT, check=True)
-    subprocess.run(["python3", "scripts/generate_all_v2_types.py"], cwd=ROOT, check=True)
+    # Regenerate contract artifacts via single maintenance entrypoint.
+    subprocess.run(["python3", "scripts/update_sdk_artifacts.py", "--types-only"], cwd=ROOT, check=True)
 
     # Ensure no diff in generated targets after regeneration.
     diff = subprocess.run(
