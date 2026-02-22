@@ -200,7 +200,9 @@ def generate_v2_all() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     run(
         [
-            "datamodel-codegen",
+            sys.executable,
+            "-m",
+            "datamodel_code_generator",
             "--input",
             str(schema_dir()),
             "--input-file-type",
