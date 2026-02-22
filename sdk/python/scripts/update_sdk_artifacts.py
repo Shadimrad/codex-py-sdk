@@ -28,35 +28,40 @@ def schema_dir() -> Path:
     return repo_root() / "codex-rs" / "app-server-protocol" / "schema" / "json" / "v2"
 
 
+def _is_windows() -> bool:
+    return platform.system().lower().startswith("win")
+
+
 def pinned_bin_path() -> Path:
-    return sdk_root() / "bin" / "codex"
+    name = "codex.exe" if _is_windows() else "codex"
+    return sdk_root() / "bin" / name
 
 
 def run(cmd: list[str], cwd: Path) -> None:
     subprocess.run(cmd, cwd=str(cwd), check=True)
 
 
-def platform_tokens() -> list[str]:
+def platform_tokens() -> tuple[list[str], list[str]]:
     sys_name = platform.system().lower()
     machine = platform.machine().lower()
 
     if sys_name == "darwin":
         os_tokens = ["darwin", "apple-darwin", "macos"]
     elif sys_name == "linux":
-        os_tokens = ["linux", "unknown-linux"]
+        os_tokens = ["linux", "unknown-linux", "musl", "gnu"]
     elif sys_name.startswith("win"):
-        os_tokens = ["windows", "pc-windows", "win"]
+        os_tokens = ["windows", "pc-windows", "win", "msvc", "gnu"]
     else:
         raise RuntimeError(f"Unsupported OS: {sys_name}")
 
     if machine in {"arm64", "aarch64"}:
         arch_tokens = ["aarch64", "arm64"]
     elif machine in {"x86_64", "amd64"}:
-        arch_tokens = ["x86_64", "amd64"]
+        arch_tokens = ["x86_64", "amd64", "x64"]
     else:
         raise RuntimeError(f"Unsupported architecture: {machine}")
 
-    return [*os_tokens, *arch_tokens]
+    return os_tokens, arch_tokens
 
 
 def pick_release(channel: str) -> dict[str, Any]:
@@ -72,7 +77,7 @@ def pick_release(channel: str) -> dict[str, Any]:
     return candidates[0]
 
 
-def pick_asset(release: dict[str, Any], tokens: list[str]) -> dict[str, Any]:
+def pick_asset(release: dict[str, Any], os_tokens: list[str], arch_tokens: list[str]) -> dict[str, Any]:
     scored: list[tuple[int, dict[str, Any]]] = []
     for asset in release.get("assets", []):
         name = (asset.get("name") or "").lower()
@@ -80,10 +85,19 @@ def pick_asset(release: dict[str, Any], tokens: list[str]) -> dict[str, Any]:
             continue
         if not (name.endswith(".tar.gz") or name.endswith(".zip")):
             continue
-        score = sum(1 for t in tokens if t in name)
+
+        os_score = sum(1 for t in os_tokens if t in name)
+        arch_score = sum(1 for t in arch_tokens if t in name)
+        if os_score == 0 or arch_score == 0:
+            continue
+
+        # Prefer more specific OS/arch matches.
+        score = os_score * 10 + arch_score
         scored.append((score, asset))
+
     if not scored:
         raise RuntimeError("Could not find matching release asset for this platform")
+
     scored.sort(key=lambda x: x[0], reverse=True)
     return scored[0][1]
 
@@ -106,13 +120,19 @@ def extract_codex_binary(archive: Path, out_bin: Path) -> None:
         else:
             raise RuntimeError(f"Unsupported archive format: {archive}")
 
-        candidates = [p for p in tmp.rglob("*") if p.is_file() and p.name == "codex"]
+        preferred_names = {"codex.exe", "codex"}
+        candidates = [
+            p for p in tmp.rglob("*") if p.is_file() and (p.name.lower() in preferred_names or p.name.lower().startswith("codex-"))
+        ]
         if not candidates:
-            raise RuntimeError("No `codex` binary found in release archive")
+            raise RuntimeError("No codex binary found in release archive")
+
+        candidates.sort(key=lambda p: (p.name.lower() not in preferred_names, p.name.lower()))
 
         out_bin.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(candidates[0], out_bin)
-        out_bin.chmod(out_bin.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        if not _is_windows():
+            out_bin.chmod(out_bin.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
 def update_binary(channel: str) -> None:
@@ -120,7 +140,8 @@ def update_binary(channel: str) -> None:
         raise RuntimeError("GitHub CLI (`gh`) is required to download release binaries")
 
     release = pick_release(channel)
-    asset = pick_asset(release, platform_tokens())
+    os_tokens, arch_tokens = platform_tokens()
+    asset = pick_asset(release, os_tokens, arch_tokens)
     print(f"Release: {release.get('tag_name')} ({channel})")
     print(f"Asset: {asset.get('name')}")
 

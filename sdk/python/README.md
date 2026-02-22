@@ -51,12 +51,12 @@ python scripts/update_sdk_artifacts.py --channel alpha
 
 What it does:
 
-- downloads latest release `codex` binary for current OS/arch into `sdk/python/bin/codex`
+- downloads latest release binary for current OS/arch into `sdk/python/bin/` (`codex` on macOS/Linux, `codex.exe` on Windows)
 - regenerates protocol-derived Python types
 
 Runtime binary:
 
-- single source: pinned `sdk/python/bin/codex` (no fallback)
+- single source: pinned `sdk/python/bin/` platform binary (`codex` or `codex.exe`) (no fallback)
 
 ## Compatibility and versioning
 

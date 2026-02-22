@@ -14,7 +14,7 @@ python -m pip install -e .
 Requirements:
 
 - Python `>=3.10`
-- pinned runtime binary at `sdk/python/bin/codex`
+- pinned runtime binary at `sdk/python/bin/` (`codex` on macOS/Linux, `codex.exe` on Windows)
 - Local Codex auth/session configured
 
 ## 2) Run your first turn
